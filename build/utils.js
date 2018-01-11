@@ -32,7 +32,9 @@ exports.cssLoaders = function (options) {
   const sassResourceLoader = {
     loader: 'sass-resources-loader',
     options: {
-      resources: './src/styles/variables.scss',
+      resources: [
+        path.join(__dirname, '../src/styles/_variables.scss'),
+      ],
     },
   };
 
@@ -47,10 +49,6 @@ exports.cssLoaders = function (options) {
           sourceMap: options.sourceMap
         })
       })
-
-      // if (loader === 'sass') {
-      //   loaders.push();
-      // }
     }
 
     // Extract CSS when that option is specified
@@ -71,7 +69,7 @@ exports.cssLoaders = function (options) {
     postcss: generateLoaders(),
     less: generateLoaders('less'),
     sass: generateLoaders('sass', { indentedSyntax: true }),
-    scss: [generateLoaders('sass')],
+    scss: generateLoaders('sass').concat(sassResourceLoader),
     stylus: generateLoaders('stylus'),
     styl: generateLoaders('stylus')
   }

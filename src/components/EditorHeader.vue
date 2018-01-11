@@ -1,5 +1,7 @@
 <template>
-  <div className="EditorHeader"><slot></slot></div>
+  <div class="EditorHeader">
+    <slot></slot>
+  </div>
 </template>
 
 <script>

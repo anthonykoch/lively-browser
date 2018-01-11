@@ -13,10 +13,12 @@
         default: 0,
       },
     },
-    data: {},
+    data() {
+      return {};
+    },
     computed: {
       style() {
-        return `${this.props.flex} 0 auto`;
+        return `${this.$props.flex} 0 auto`;
       },
     },
   };

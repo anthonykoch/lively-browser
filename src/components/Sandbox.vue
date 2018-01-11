@@ -4,7 +4,7 @@
       frameborder="0"
       style="display: none;"
       :src="url"
-      :onload="onLoad"
+      @load="onLoad"
       ref="iframe"></iframe>
   </div>
 </template>
@@ -21,6 +21,10 @@ export default {
       type: String,
       required: true,
     },
+    origin: {
+      type: String,
+      required: true,
+    },
   },
   data() {
     return {
@@ -30,15 +34,15 @@ export default {
   },
   methods: {
     onActionCompleted({ data: response }) {
-      // console.log('Received:', response);
+      console.log('Received:', response);
 
       const isAction = (
         response && response.type === 'response' &&
-        response.to && response.to.origin === this.props.origin
+        response.to && response.to.origin === this.$props.origin
       );
 
       if (isAction) {
-        this.$emit('message', response);
+        this.$emit('response', response);
       }
     },
 
@@ -49,19 +53,20 @@ export default {
         execId,
       };
 
-      const action = createAction('lively.exec', payload, this.props.origin);
+      const action = createAction('lively.exec', payload, this.$props.origin);
 
       this.pending[action.id] = action;
       this.send(action);
     },
 
     send(message) {
-      this.iframe.contentWindow.postMessage(message, DOMAIN);
+      console.log(message)
+      this.$refs.iframe.contentWindow.postMessage(message, DOMAIN);
     },
 
     onLoad() {
       this.ready = true;
-      this.$emit('loaded');
+      this.$emit('load');
     },
   },
 

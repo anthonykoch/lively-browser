@@ -1,3 +1,14 @@
+import editor from './editor';
+import codeSlideshow from './code-slideshow';
+
+export default {
+  strict: true,
+  modules: {
+    editor,
+    codeSlideshow,
+  },
+};
+
 // import assert from 'assert';
 
 // import { EDITOR, SLIDESHOW } from 'app/constants.js';

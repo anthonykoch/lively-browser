@@ -5,19 +5,21 @@ import Vuex from 'vuex';
 
 import App from './App';
 import router from './router';
+import storeDefinitions from './store';
+
+import '@/styles/global.scss';
+import 'codemirror/lib/codemirror.css';
+
+import 'codemirror/theme/monokai.css';
 
 Vue.use(Vuex);
 
 Vue.config.productionTip = false;
 
-const store = new Vuex.Store({
-  state: {
-    count: 0,
-  },
-  mutations: {
-    // increment(state) {
-    // },
-  },
+const store = new Vuex.Store(storeDefinitions);
+
+store.subscribe(function(mutation, state) {
+  console.log('Store change', mutation)
 });
 
 /* eslint-disable no-new */

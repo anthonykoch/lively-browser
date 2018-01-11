@@ -1,0 +1,137 @@
+@import 'variables';
+
+$app-font-family: Quicksand;
+
+*,
+*:after,
+*:before {
+  box-sizing: inherit;
+  margin: 0;
+  padding: 0
+}
+
+html {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  width: 100%
+}
+
+body {
+  font-family: $app-font-family;
+  min-height: 100vh;
+}
+
+#{$app-headings} {
+  font-weight: 500;
+  font-family: $app-font-family;
+}
+
+img {
+  max-width: 100%;
+}
+
+p {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.markdown {
+  $markdown-spacing: 30px;
+
+  line-height: 1.7;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 50px;
+  max-width: 70%;
+
+  p {
+    margin-bottom: $markdown-spacing;
+  }
+
+  #{$app-headings} {
+    margin-bottom: 1rem;
+  }
+}
+
+.button {
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+  display: inline-block;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.button--default {
+  border: 1px solid rgba(black, 0.2);
+  border-radius: 3px;
+  padding: 12px 20px;
+  letter-spacing: 1px;
+  min-width: 100px;
+  text-transform: uppercase;
+}
+
+.button--rounded {
+  border-radius: 200px;
+}
+
+.button + .button {
+  margin-left: 12px;
+}
+
+
+
+
+
+.vue-codemirror {
+  height: 100%;
+}
+
+.CodeMirror-lines {
+  padding-top: 12px;
+  padding-bottom: 300px;
+}
+
+.CodeMirror-linenumbers {
+  // width: 50px;
+}
+
+.CodeMirror {
+  height: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 20px;
+}
+
+.CodeMirror-line {
+  line-height: inherit;
+  font-family: inherit;
+}
+
+.CodeMirror-code > div {
+  display: flex;
+}
+
+.CodeMirror-linewidget {
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.CodeMirror-foldgutter {
+  width: 1rem;
+}
+
+.Phantom {
+  color: #318e6c;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  top: 0;
+  white-space: nowrap;
+  margin-left: 1rem;
+  z-index: 1;
+}
+
