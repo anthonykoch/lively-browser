@@ -4,6 +4,7 @@
       ref="editor"
       :value="code"
       :options="cmOptions"
+      @viewportChange="onCMViewportChange"
       @ready="onCMReady"
       @input="onCMCodeChange">
     </codemirror>
@@ -11,12 +12,17 @@
 </template>
 
 <script>
+import CodeMirror from 'codemirror';
 import { codemirror } from 'vue-codemirror';
+import debounce from 'lodash/debounce';
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/keymap/sublime';
 import 'codemirror/theme/monokai.css';
 import 'codemirror/mode/javascript/javascript.js';
+
+import emmet from '@emmetio/codemirror-plugin';
+emmet(CodeMirror);
 
 export default {
   name: 'Editor',
@@ -32,18 +38,28 @@ export default {
   },
   data() {
     return {
-      widgets: [],
       cmOptions: {
+        mode: 'javascript',
+
         autoCloseBrackets: true,
         theme: 'monokai',
         keyMap: 'sublime',
         lineNumbers: true,
         matchBrackets: true,
-        mode: 'javascript',
+        // lineWrapping: true,
         viewportMargin: 15,
         showCursorWhenSelecting: true,
         styleActiveLine: true,
         tabWidth: 2,
+
+        // Required by Emmet
+        markTagPairs: true,
+        autoRenameTags: true,
+
+        extraKeys: {
+          Tab: 'emmetExpandAbbreviation',
+          Enter: 'emmetInsertLineBreak',
+        },
       },
     };
   },
@@ -57,6 +73,11 @@ export default {
     onCMCodeChange() {
       this.$emit('change');
     },
+    onCMViewportChange: debounce(function () {
+      this.updatePhantoms(this.$props);
+    }, 300, {
+      maxWait: 350,
+    }),
     getValue() {
       return this.getCodeMirror().getValue();
     },
@@ -72,52 +93,59 @@ export default {
       // if (!shouldRenderPhantoms) {
       //   return;
       // }
+      const VIEWPORT_OFFSET = 20;
+
       const cm = this.getCodeMirror();
       const viewport = cm.getViewport();
 
       cm.operation(() => {
         console.log('Updating', Date.now());
-        this.widgets.forEach(widget => {
-          cm.removeLineWidget(widget);
-        });
-
+        this.widgets.forEach(widget => cm.removeLineWidget(widget));
         this.widgets = [];
-        const VIEWPORT_OFFSET = 20;
 
           console.time('render');
-        phantoms
-          .filter(p => (
-              p.line >= (viewport.from - VIEWPORT_OFFSET) && p.line <= (viewport.to + VIEWPORT_OFFSET)
+        const ps =
+          phantoms
+            .filter(p =>
+                p.line >= (viewport.from - VIEWPORT_OFFSET) &&
+                p.line <= (viewport.to + VIEWPORT_OFFSET)
             )
-          )
-          .forEach(phantom => {
-            const line = phantom.line - 1;
-            const phantomElement = document.createElement('div');
+            .map(phantom => {
+              const line = phantom.line - 1;
+              const phantomElement = document.createElement('div');
 
-            // Enforce nowrap in case a user defined class adds it
-            phantomElement.style.whiteSpace = 'nowrap';
-            phantomElement.classList.add('Phantom');
-            phantomElement.classList.add(phantom.className);
-            phantomElement.textContent = phantom.content;
+              // Enforce nowrap in case a user defined class adds it
+              phantomElement.style.whiteSpace = 'nowrap';
+              phantomElement.classList.add('Phantom');
+              phantomElement.classList.add(phantom.className);
+              phantomElement.textContent = phantom.content;
 
-            this.widgets.push(
-              cm.addLineWidget(line, phantomElement, {
-                coverGutter: false,
-                noHScroll: true,
-              })
-            );
+              this.widgets.push(
+                cm.addLineWidget(line, phantomElement, {
+                  coverGutter: false,
+                  noHScroll: true,
+                })
+              );
 
-            // this.$emit('phantoms-rendered', phantoms);
-          });
-          console.timeEnd('render');
-          console.log('\n');
-      });
+              // this.$emit('phantoms-rendered', phantoms);
+              return phantom;
+            });
+            console.timeEnd('render');
+            console.log('\n');
+          console.log(ps.length)
+        });
     },
   },
   watch: {
     phantoms() {
-      this.updatePhantoms(this.$props);
+      this.updatePhantomsDelayed(this.$props);
     },
+  },
+  created() {
+    this.widgets = [];
+    this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
+      trailing: true,
+    });
   },
 };
 </script>

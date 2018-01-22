@@ -29,34 +29,38 @@ function loadModule(name) {
   throw new Error(`Cannot find module ${name}`);
 }
 
-const _require = (moduleName) => {
-  return loadModule(moduleName);
-};
+const $_require = moduleName => loadModule(moduleName);
 
 const actions = {
 
   'lively.exec'(action, sendResponse) {
     const recorder = createRecorder();
-    const tracker  = createTracker(recorder);
+    const tracker = createTracker(recorder);
 
     recorder.on('data', (expression) => {
       sendResponse({
         execId: action.payload.execId,
-        expression: expression,
+        expression,
       });
     });
 
+    const __dirname = action.payload.__dirname;
+    const __filename = action.payload.__filename;
     const exports = {};
     const module = {
-      require: _require,
+      require: $_require,
       exports,
     };
+
+    // console.log('input:', action.payload.input);
 
     const result = run(action.payload.input, {
       tracker,
       functionId: FUNCTION_ID,
-      initiator: action.payload.initiator,
+      __dirname,
+      __filename,
       module,
+      map: action.payload.map,
     });
 
     recorder.removeAllListeners();
@@ -85,6 +89,9 @@ window.addEventListener('message', ({ data: message }) => {
   //     message,
   //   }));
   // }
+
+  // console.log('IframeIncoming', message)
+  // console.log(Date.now())
 
   if (message.type === 'action') {
     runner.run(message, createSendResponse(message, sender, ORIGIN));

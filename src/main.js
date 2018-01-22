@@ -18,9 +18,9 @@ Vue.config.productionTip = false;
 
 const store = new Vuex.Store(storeDefinitions);
 
-store.subscribe(function(mutation, state) {
-  console.log('Store change', mutation)
-});
+// store.subscribe(function(mutation, state) {
+//   console.log('Store change', mutation)
+// });
 
 /* eslint-disable no-new */
 new Vue({

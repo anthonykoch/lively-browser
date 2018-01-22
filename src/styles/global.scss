@@ -124,6 +124,9 @@ p {
   width: 1rem;
 }
 
+
+
+
 .Phantom {
   color: #318e6c;
   font-family: inherit;
@@ -135,3 +138,6 @@ p {
   z-index: 1;
 }
 
+.Phantom--is-error {
+  color: #ef2f5a;
+}

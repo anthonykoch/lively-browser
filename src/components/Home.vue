@@ -29,7 +29,8 @@
           <app-editor-header>
             <app-editor-header-item :flex="1">
               <div class="EditorError">
-                <span class="EditorError-text">{{errorMessage}}</span>
+                <span class="EditorError-text">{{ errorMessage }}</span>
+                <span class="EditorError-location">{{ errorLocation }}</span>
               </div>
             </app-editor-header-item>
             <!-- <app-editor-header-item>
@@ -45,7 +46,8 @@
               :origin="origin"
               url="/sandbox.html"
               @response="onSandboxResponse"
-              @load="runScript"
+              @load="onSandboxLoaded"
+              @error="onSandboxError"
             ></app-sandbox>
             <app-editor
               ref="editor"
@@ -85,6 +87,7 @@ export default {
       console,
       origin: `name:lively-editor;id:${Math.random()}`,
       errorMessage: '',
+      errorLocation: '',
     };
   },
   computed: mapState({
@@ -97,7 +100,7 @@ export default {
   }),
   methods: {
     onEditorChange: debounce(function () {
-      this.runScript();
+      this.onSandboxLoaded();
     }, 200, {
       trailing: true,
     }),
@@ -112,19 +115,38 @@ export default {
         initiator: 'lively.js',
       });
     },
+    onSandboxLoaded() {
+      this.runScript();
+    },
+    onSandboxError({ execId, error }) {
+      this.errorMessage = '';
+
+      // console.log(execId, this.activeExecId);
+      if (execId >= this.activeExecId) {
+        if (error.loc && Number.isFinite(error.loc.line)) {
+          this.$store.dispatch(EDITOR_ADD_PHANTOM, {
+            execId,
+            content: `\u{1f608} ${error.message}`,
+            line: error.loc.line,
+            left: error.loc.column,
+            className: 'Phantom--is-error',
+          });
+        } else {
+          this.$store.dispatch(EDITOR_CLEAR_PHANTOMS);
+        }
+
+        this.errorMessage = Error.prototype.toString.call(error);
+        this.errorLocation = `(${error.loc.line}:${error.loc.column})`;
+      }
+    },
     onSandboxResponse(response) {
       // console.log('Response:', response);
-      // console.log('Response:', JSON.stringify(response, null, 2));
 
       const result = response.payload;
-
-      this.errorMessage = '';
-      // console.log('Ids:', result.execId >= this.props.activeExecId, result.execId, this.props.activeExecId);
 
       // Don't render any phantoms for things still going on in previous scripts
       // console.log(result.execId, this.activeExecId)
       if (result.execId >= this.activeExecId) {
-        const err = result.error;
         const execId = result.execId;
 
         if ((!response.done) && result.expression) {
@@ -136,23 +158,6 @@ export default {
             line: expr.loc.end.line,
             left: expr.loc.end.column,
           });
-        }
-
-        if (err) {
-          if (err.loc && Number.isFinite(err.loc.line)) {
-            this.$store.dispatch(EDITOR_ADD_PHANTOM, {
-              execId: execId,
-              // value: `${err.message}`,
-              content: `\u{1f608} ${err.message}`,
-              line: err.loc.line,
-              left: err.loc.column,
-              // className: classnames(stylesShared.phantom, stylesShared.phantomIsError),
-            });
-          } else {
-            this.$store.dispatch(EDITOR_CLEAR_PHANTOMS);
-          }
-
-          this.errorMessage = err && err.message ? err.message : '';
         }
       }
     },

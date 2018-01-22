@@ -31,11 +31,9 @@ console.log('LUL');
       state.hasDirtyPhantoms = false;
     },
     addPhantom(state, payload) {
-      console.log('PhantomPayload:', payload);
-
       const phantoms =
         state.phantoms
-          .filter(phantom => {
+          .filter((phantom) => {
             return (
               payload.execId === phantom.execId &&
               phantom.line !== payload.line
