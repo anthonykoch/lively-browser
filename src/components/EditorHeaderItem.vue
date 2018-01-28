@@ -18,7 +18,7 @@
     },
     computed: {
       style() {
-        return `${this.$props.flex} 0 auto`;
+        return { flex: `${this.$props.flex} 0 auto` };
       },
     },
   };
