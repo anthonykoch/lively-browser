@@ -1,6 +1,13 @@
 
+$app-headings: (h1, h2, h3, h4, h5, h6);
+$app-header-height: 40px;
+$app-path-images: '../assets/images/';
+
 $codemirror-gutter-border-color: darken(#e6e6e6, 4);
 
-$app-headings: (h1, h2, h3, h4, h5, h6);
 
-$app-header-height: 40px;
+@function app-image-url($url) {
+  $path: join($app-path-images, $url);
+
+  @return url($path);
+}

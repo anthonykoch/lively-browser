@@ -24,7 +24,7 @@
         </div>
       </div>
       <div style="width: 50%;">
-        <div class="editorPanel">
+        <div class="EditorPanel">
 
           <app-editor-header>
             <app-editor-header-item :flex="1">
@@ -33,14 +33,14 @@
                 <span class="EditorError-location">{{ errorLocation }}</span>
               </div>
             </app-editor-header-item>
-            <!-- <app-editor-header-item>
+            <app-editor-header-item>
               <div class="buttonList">
-                <button class="button styles.button--settings"></button>
+                <button class="button button--settings"></button>
               </div>
-            </app-editor-header-item> -->
+            </app-editor-header-item>
           </app-editor-header>
 
-          <div style="flex: 1;">
+          <div>
             <app-sandbox
               ref="sandbox"
               :origin="origin"
@@ -175,7 +175,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
 
-.editorPanel {
+.EditorPanel {
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -240,7 +240,7 @@ export default {
 }
 
 .button--settings {
-  /*background-image: url('/assets/images/icon.navicon.svg');*/
+  background-image: url('../assets/images/icon.navicon.svg');
   background-repeat: no-repeat;
   background-position: center;
   background-size: 30px;
