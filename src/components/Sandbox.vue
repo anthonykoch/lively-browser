@@ -39,7 +39,7 @@ export default {
   },
   methods: {
     onActionCompleted({ data: response }) {
-      console.log('SandboxReceived:', response);
+      // console.log('SandboxReceived:', response);
 
       const isAction = (
         response && response.type === 'response' &&
@@ -78,7 +78,7 @@ export default {
         __dirname: path.dirname(initiator),
         input: data.code,
         execId,
-        map: data.map,
+        sourcemap: data.map,
       };
 
       const action = createAction('lively.exec', payload, this.$props.origin);

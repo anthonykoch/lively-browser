@@ -60,7 +60,7 @@ const actions = {
       __dirname,
       __filename,
       module,
-      map: action.payload.map,
+      sourcemap: action.payload.sourcemap,
     });
 
     recorder.removeAllListeners();

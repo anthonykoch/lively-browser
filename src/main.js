@@ -22,6 +22,8 @@ const store = new Vuex.Store(storeDefinitions);
 //   console.log('Store change', mutation)
 // });
 
+console.log(store);
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

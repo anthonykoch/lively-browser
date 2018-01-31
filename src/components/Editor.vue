@@ -31,10 +31,6 @@ export default {
       type: String,
       required: true,
     },
-    phantoms: {
-      type: Array,
-      required: true,
-    },
   },
   data() {
     return {
@@ -67,6 +63,28 @@ export default {
     codemirror,
   },
   methods: {
+    addPhantom(newPhantom) {
+      const newPhantoms =
+        this.phantoms
+          .filter((phantom) => {
+            const isExpired = phantom.isExpired != null && phantom.isExpired(phantom);
+            const shouldRemain = isExpired === false && phantom.line !== newPhantom.line;
+
+            // console.log({shouldRemain, isExpired}, phantom)
+
+            return shouldRemain;
+          });
+
+      newPhantoms.push(newPhantom);
+
+      this.phantoms = newPhantoms;
+      this.hasDirtyPhantoms = true;
+      this.updatePhantomsDelayed(newPhantoms, true);
+    },
+    clearPhantoms() {
+      this.phantoms = [];
+      this.hasDirtyPhantoms = false;
+    },
     onCMReady() {
       this.$emit('ready');
     },
@@ -74,7 +92,7 @@ export default {
       this.$emit('change');
     },
     onCMViewportChange: debounce(function () {
-      this.updatePhantoms(this.$props);
+      this.updatePhantoms(this.phantoms, true);
     }, 300, {
       maxWait: 350,
     }),
@@ -84,26 +102,25 @@ export default {
     getCodeMirror() {
       return this.$refs.editor.codemirror;
     },
-    updatePhantoms(props) {
-      const { shouldRenderPhantoms, phantoms } = props;
-      // console.log('UpdatedPhantoms:', phantoms.map(p => p.line));
-
+    updatePhantoms(phantoms, force=false) {
       // Don't bother updating the phantoms because it may cause old phantoms
       // to be rendered on a previous old line and then its new line when.
-      // if (!shouldRenderPhantoms) {
-      //   return;
-      // }
+      if (!this.hasDirtyPhantoms && !force) {
+        return;
+      }
+
       const VIEWPORT_OFFSET = 20;
 
       const cm = this.getCodeMirror();
       const viewport = cm.getViewport();
 
       cm.operation(() => {
-        console.log('Updating', Date.now());
+        // console.log('Updating', Date.now());
         this.widgets.forEach(widget => cm.removeLineWidget(widget));
         this.widgets = [];
 
-          console.time('render');
+        // console.time('render');
+
         const ps =
           phantoms
             .filter(p =>
@@ -130,18 +147,16 @@ export default {
               // this.$emit('phantoms-rendered', phantoms);
               return phantom;
             });
-            console.timeEnd('render');
-            console.log('\n');
-          console.log(ps.length)
+            // console.timeEnd('render');
+            // console.log('\n');
+            // console.log(ps.length)
         });
-    },
-  },
-  watch: {
-    phantoms() {
-      this.updatePhantomsDelayed(this.$props);
+
+      this.hasDirtyPhantoms = false;
     },
   },
   created() {
+    this.phantoms = [];
     this.widgets = [];
     this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
       trailing: true,

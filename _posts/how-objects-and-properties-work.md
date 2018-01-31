@@ -1,6 +1,7 @@
-
-
-## Prototypal inheritance
+---
+title: How objects and properties work
+slug: how-objects-and-properties-work
+---
 
 I wrote about prototypal inheritance before and I didn't like the way I went about it. I think it's best to just show a live example of the most basic and simplistic version of how properties are retrieved and go from there.
 
@@ -10,6 +11,7 @@ I wrote about prototypal inheritance before and I didn't like the way I went abo
 Let's just take a quick moment to understand what an object is. An object is a way to store data by name. We often use them to represent different things. For example, we might want an object to represent a user that contains data to be saved to a database. It could have an age, username, or favorite food.
 
 ```__CODESECTION__
+var age = 123;
 var user = {
   username: 'musefan42',
   age: 42,
@@ -17,8 +19,6 @@ var user = {
 };
 
 user;
-
-
 ```
 
 

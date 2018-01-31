@@ -5,6 +5,28 @@ $app-path-images: '../assets/images/';
 
 $codemirror-gutter-border-color: darken(#e6e6e6, 4);
 
+$app-backup-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+
+$app-heading-font-family: 'EB Garamond', $app-backup-font-family;
+$app-text-font-family: Avenir, $app-backup-font-family;
+$app-text-font-family: Karla, $app-backup-font-family;
+// $app-text-font-family: 'Helvetica Neue', $app-backup-font-family;
+$app-text-line-height: 1.9;
+$app-text-font-size: 16px;
+$app-text-font-weight: 400;
+
+// $app-text-font-family: 'EB Garamond', $app-backup-font-family;
+// $app-heading-font-family: Avenir, $app-backup-font-family;
+// $app-text-font-size: 20px;
+
+$app-spacing: 16px;
+
+$app-code-font-family: 'Source Code Pro', Monaco, Consolas;
+$app-code-font-size: 13px;
+$app-code-line-height: 1.7;
+
+
+
 
 @function app-image-url($url) {
   $path: join($app-path-images, $url);
