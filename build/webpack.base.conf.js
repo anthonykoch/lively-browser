@@ -87,6 +87,7 @@ module.exports = {
     // that does not make sense for the client
     dgram: 'empty',
     fs: 'empty',
+    module: 'empty',
     net: 'empty',
     tls: 'empty',
     child_process: 'empty'
