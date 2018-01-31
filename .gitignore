@@ -1,3 +1,5 @@
+static/fonts
+
 .DS_Store
 node_modules/
 /dist/
