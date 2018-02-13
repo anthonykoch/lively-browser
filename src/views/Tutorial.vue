@@ -125,22 +125,24 @@ export default {
   methods: {
 
     onResponseError(error, response) {
-      console.log(error)
+      console.log('ResponseError:', error, '\n');
       this.error = Object.freeze(error);
       this.errorExecId = response.to.id;
     },
 
     onTransformError(error, execId) {
+      console.log('TransformError:', error, '\n');
       this.error = Object.freeze(error);
       this.errorExecId = execId;
     },
 
     onSandboxResponse(response) {
-      if (this.errorExecId === response.to.id) {
-        // Don't reset the error message because it will cause the error to
-        // flash when typing
-        return;
-      }
+      console.log('Response', response);
+      // if (this.errorExecId === response.to.id) {
+      //   // Don't reset the error message because it will cause the error to
+      //   // flash when typing
+      //   return;
+      // }
 
       this.error = null;
     },

@@ -67,7 +67,9 @@ export default {
     },
 
     isPhantomExpired(phantom) {
-      return phantom.execId < this.activeExecId;
+      console.log('expired', this.activeExecId > phantom.execId, phantom.execId, this.activeExecId,);
+
+      return this.activeExecId > phantom.execId;
     },
 
     onEditorChange: debounce(function () {
@@ -92,6 +94,7 @@ export default {
       const error = data.error;
 
       if (error) {
+        // this.clearPhantoms();
         this.$emit('transform-error', error, activeExecId);
 
         if (error.loc) {
@@ -134,8 +137,7 @@ export default {
           });
         } else {
           // Todo: Figure out smarter way of updating phantoms
-          this.clearPhantoms();
-          // console.log('lol cleared');
+          // this.clearPhantoms();
         }
 
         const message = error.message;
@@ -161,7 +163,9 @@ export default {
       if (result.execId >= this.activeExecId) {
         const execId = result.execId;
 
-        if ((!response.done) && result.expression) {
+        if (response.done) {
+          this.$refs.editor.updatePhantoms(true);
+        } else if (result.expression) {
           const expr = result.expression;
           this.$emit('response', response);
 
@@ -169,6 +173,7 @@ export default {
             isExpired: this.isPhantomExpired,
             execId,
             content: expr.value,
+            // content: `${execId}${expr.value}`,
             line: expr.loc.end.line,
           });
         }

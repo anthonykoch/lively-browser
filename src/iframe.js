@@ -96,7 +96,7 @@ window.addEventListener('message', ({ data: message }) => {
   // }
 
   // console.log('IframeIncoming', message)
-  // console.log(Date.now())
+  // console.log('IframeReceived', Date.now())
 
   if (message.type === 'action') {
     runner.run(message, createSendResponse(message, sender, ORIGIN));

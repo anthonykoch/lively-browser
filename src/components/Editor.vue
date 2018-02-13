@@ -4,6 +4,7 @@
       ref="editor"
       :value="code"
       :options="cmOptions"
+      @renderLine="onRenderLine"
       @viewportChange="onCMViewportChange"
       @ready="onCMReady"
       @input="onCMCodeChange">
@@ -26,7 +27,6 @@ import emmet from '@emmetio/codemirror-plugin';
 emmet(CodeMirror);
 
 const VIEWPORT_OFFSET = 20;
-
 
 export default {
   name: 'Editor',
@@ -83,13 +83,26 @@ export default {
 
       this.phantoms = newPhantoms;
       this.hasDirtyPhantoms = true;
-      this.updatePhantomsDelayed(newPhantoms, true);
+      this.updatePhantomsDelayed(true);
     },
     clearPhantoms() {
       this.phantoms = [];
       this.hasDirtyPhantoms = false;
-      this.updatePhantoms(this.phantoms);
+      this.updatePhantoms();
     },
+
+    getPhantoms() {
+      const phantoms =
+        this.phantoms.filter(phantom => (
+            typeof phantom.isExpired === 'function'
+              ? !phantom.isExpired(phantom)
+              : true
+            )
+          );
+
+      return phantoms;
+    },
+
     onCMReady() {
       this.$emit('ready');
     },
@@ -97,7 +110,7 @@ export default {
       this.$emit('change');
     },
     onCMViewportChange: debounce(function () {
-      this.updatePhantoms(this.phantoms, true);
+      this.updatePhantoms(true);
     }, 300, {
       maxWait: 350,
     }),
@@ -107,12 +120,20 @@ export default {
     getCodeMirror() {
       return this.$refs.editor.codemirror;
     },
-    updatePhantoms(phantoms, force=false) {
+    updatePhantoms(force=false) {
       // Don't bother updating the phantoms because it may cause old phantoms
       // to be rendered on a previous old line and then its new line when.
       if (!this.hasDirtyPhantoms && !force) {
         return;
       }
+
+      console.log('after:', this.phantoms);
+
+      const phantoms = this.getPhantoms();
+
+      this.phantoms = phantoms;
+
+      console.log('after:', phantoms);
 
       const cm = this.getCodeMirror();
       const viewport = cm.getViewport();
@@ -145,7 +166,7 @@ export default {
               })
             );
 
-            this.$emit('phantoms-rendered', phantoms);
+            this.$emit('update-phantoms', phantoms);
 
             return phantom;
           });
@@ -155,6 +176,8 @@ export default {
 
       this.hasDirtyPhantoms = false;
     },
+
+    onRenderLine() {},
   },
   created() {
     this.phantoms = [];
