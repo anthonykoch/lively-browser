@@ -29,22 +29,34 @@
         <div class="EditorPanel">
             <app-editor-sandbox
               :code="'name'"
-              @error="onSandboxError"
-              @response="onSandboxResponse">
+              @response="onSandboxResponse"
+              @response-error="onResponseError"
+              @transform-error="onTransformError"
+            >
             </app-editor-sandbox>
-            <app-editor-header>
+
+            <transition
+              name="lols"
+              :duration="400"
+              enter-active-class="animated fadeIn bounceIn"
+              leave-active-class="animated fadeOut bounceOut"
+            >
+              <div class="EditorError" v-show="error != null">
+                <span class="EditorError-location">{{ errorLocation }}</span>
+                <span class="EditorError-text">{{ errorMessage }}</span>
+              </div>
+            </transition>
+
+            <!-- <app-editor-header>
               <app-editor-header-item :flex="1">
-                <div class="EditorError">
-                  <span class="EditorError-text">{{ errorMessage }}</span>
-                  <span class="EditorError-location">{{ errorLocation }}</span>
-                </div>
+
               </app-editor-header-item>
               <app-editor-header-item>
                 <div class="buttonList">
                   <button class="button button--settings"></button>
                 </div>
               </app-editor-header-item>
-            </app-editor-header>
+            </app-editor-header> -->
         </div>
       </div>
     </div>
@@ -63,14 +75,17 @@ import {
 } from '@/store/constants';
 
 export default {
+
   name: 'Tutorial',
+
   data() {
     return {
       console,
-      errorMessage: '',
-      errorLocation: '',
+      error: null,
+      errorExecId: null,
     };
   },
+
   beforeRouteEnter(to, from, next) {
     next(async (vm) => {
       const slug = to.params.slug;
@@ -78,31 +93,66 @@ export default {
       await vm.$store.dispatch(LOAD_ARTICLE_REQUEST, slug);
     });
   },
+
   computed: {
+
     ...mapState({
       code: state => state.editor.value,
       article: state => state.articles.article,
       articlesMeta: state => state.articles.articlesMeta,
     }),
+
     ...mapGetters({
       section: 'activeArticleSection',
     }),
+
+    errorLocation() {
+      const error = this.error;
+
+      if (error && error.hasLocation) {
+        return `(${error.loc.line}:${error.loc.column})`;
+      }
+
+      return '';
+    },
+
+    errorMessage() {
+      return this.error ? this.error.message : '';
+    }
+
   },
+
   methods: {
-    onSandboxError(error) {
-      this.errorMessage = error.message;
-      this.errorLocation = error.location;
+
+    onResponseError(error, response) {
+      console.log(error)
+      this.error = Object.freeze(error);
+      this.errorExecId = response.to.id;
     },
-    onSandboxResponse() {
-      this.errorMessage = '';
-      this.errorLocation = '';
+
+    onTransformError(error, execId) {
+      this.error = Object.freeze(error);
+      this.errorExecId = execId;
     },
+
+    onSandboxResponse(response) {
+      if (this.errorExecId === response.to.id) {
+        // Don't reset the error message because it will cause the error to
+        // flash when typing
+        return;
+      }
+
+      this.error = null;
+    },
+
   },
+
   components: {
     AppEditorHeader,
     AppEditorHeaderItem,
     AppEditorSandbox,
   },
+
 };
 </script>
 
@@ -133,8 +183,8 @@ export default {
   letter-spacing: 0.25px;
   font-size: 40px;
   font-weight: 500;
-  padding-left: 4rem;
-  padding-right: 4rem;
+  padding-left: $app-article-padding;
+  padding-right: $app-article-padding;
   padding-bottom: 1.5rem;
   margin-top: 4rem;
   font-family: Comfortaa;
@@ -149,11 +199,9 @@ export default {
 
 
 .EditorPanel {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
   font-family: consolas;
   font-size: 15px;
+  position: relatice;
   height: 100vh;
 }
 
@@ -162,15 +210,23 @@ export default {
 
 .EditorError {
   // border: 1px solid darken(#e6e6e6, 4);
+  background-color: #f71649;
+  color: white;
+  bottom: 0;
   font-family: $app-code-font-family;
   font-size: 13px;
-  height: 100%;
+  // height: 100%;
   // overflow: hidden;
   padding-bottom: 8px;
-  padding-left: 8px;
-  padding-top: 8px;
-  position: relative;
-  z-index: 2;
+  padding-left: 1rem;
+  padding-top: 1rem;
+  position: absolute;
+  width: 100%;
+  z-index: 10;
+}
+
+.EditorError-location {
+  width: 100px;
 }
 
 .EditorError-text {

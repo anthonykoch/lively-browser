@@ -1,5 +1,8 @@
 @import 'variables';
 
+@import '~normalize.css';
+@import '~animate.css';
+
 *,
 *:after,
 *:before {
@@ -68,8 +71,8 @@ pre {
   h6 {
     font-family: Comfortaa;
     font-weight: 400;
-    padding-left: 4rem;
-    padding-right: 4rem;
+    padding-left: $app-article-padding;
+    padding-right: $app-article-padding;
   }
 
   > h2 {
@@ -98,10 +101,10 @@ pre {
   // }
 
   > p {
-    // font-size: 18px;
-    font-family: CallunaSans;
-    padding-left: 4rem;
-    padding-right: 4rem;
+    font-family: Nunito Sans;
+    font-size: 16px;
+    padding-left: $app-article-padding;
+    padding-right: $app-article-padding;
   }
 }
 

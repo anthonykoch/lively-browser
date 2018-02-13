@@ -12,101 +12,73 @@
 <script>
 import path from 'path';
 
-import { createAction } from 'lively/messages';
-import { normalizeError } from 'lively/utils';
+import { createAction, createResponse, isResponseFromOrigin } from 'lively/messages';
 
 const DOMAIN = `${window.location.protocol}//${window.location.host}`;
 
-let transform = null;
-
 export default {
+
   name: 'Sandbox',
+
   props: {
-    url: {
-      type: String,
-      required: true,
-    },
-    origin: {
-      type: String,
-      required: true,
-    },
+    url: { type: String, required: true },
+    origin: { type: String, required: true },
   },
+
   data() {
     return {
       ready: false,
       pending: {},
     };
   },
+
   methods: {
+
     onActionCompleted({ data: response }) {
       // console.log('SandboxReceived:', response);
 
-      const isAction = (
-        response && response.type === 'response' &&
-        response.to && response.to.origin === this.$props.origin
-      );
+      const isValid = isResponseFromOrigin(response, this.$props.origin);
 
-      if (isAction && response.payload.error) {
-        this.$emit('error', {
-          execId: response.payload.execId,
-          error: response.payload.error,
-        });
-      } else if (isAction) {
+      if (isValid && response.payload.error) {
+        this.$emit('response-error', response);
+      } else if (isValid) {
         this.$emit('response', response);
       }
     },
 
-    injectCode({ input, execId, initiator }) {
-      if (transform === null) {
-        return;
-      }
-
-      const filename = path.basename(initiator);
-      const data = transform(input, { filename });
-
-      if (data.error) {
-        this.$emit('error', {
-          error: normalizeError(data.error, data.map, null, null),
-          execId,
-        });
-
-        return;
-      }
+    injectCode(options) {
+      const { input, execId, filename, dirname, sourcemap } = options;
 
       const payload = {
         __filename: filename,
-        __dirname: path.dirname(initiator),
-        input: data.code,
+        __dirname: dirname,
+        input,
         execId,
-        sourcemap: data.map,
+        sourcemap,
       };
 
       const action = createAction('lively.exec', payload, this.$props.origin);
 
-
       this.pending[action.id] = action;
       this.send(action);
-      // console.log(Date.now());
     },
 
     send(message) {
       this.$refs.iframe.contentWindow.postMessage(message, DOMAIN);
     },
 
-    onLoad() {
-      this.importPromise.then(() => this.$emit('load'));
+    async onLoad() {
+      this.$emit('load');
+      this.queue.forEach(options => this.injectCode(options));
     },
   },
 
   created() {
-    this.importPromise =
-      import('lively/code')
-        .then(({ transform: _transform }) => {
-          transform = _transform;
-        });
+    this.queue = [];
 
     window.addEventListener('message', this.onActionCompleted);
   },
+
 };
 </script>
 

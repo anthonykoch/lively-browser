@@ -84,6 +84,7 @@ export default {
     clearPhantoms() {
       this.phantoms = [];
       this.hasDirtyPhantoms = false;
+      this.updatePhantoms(this.phantoms);
     },
     onCMReady() {
       this.$emit('ready');
