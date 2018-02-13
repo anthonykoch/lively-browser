@@ -10,9 +10,7 @@
 </template>
 
 <script>
-import path from 'path';
-
-import { createAction, createResponse, isResponseFromOrigin } from 'lively/messages';
+import { createAction, isResponseFromOrigin } from 'lively/messages';
 
 const DOMAIN = `${window.location.protocol}//${window.location.host}`;
 

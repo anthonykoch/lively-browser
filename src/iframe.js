@@ -11,9 +11,11 @@ const FUNCTION_ID = `LIVELY_INSPECT_${random(1000000, 1999999)}`;
 
 window.process = process;
 
+// eslint-disable-next-line
 console.log('Iframe.js started');
 
 function loadModule(name) {
+  /* eslint-disable global-require */
   if (name === 'util') {
     return require('util');
   } else if (name === 'buffer') {
@@ -25,11 +27,12 @@ function loadModule(name) {
   } else if (name === 'events') {
     return require('events');
   }
+  /* eslint-enable */
 
   throw new Error(`Cannot find module ${name}`);
 }
 
-const $_require = moduleName => loadModule(moduleName);
+const $require = moduleName => loadModule(moduleName);
 
 const actions = {
 
@@ -44,11 +47,13 @@ const actions = {
       });
     });
 
+    // eslint-disable-next-line
     const __dirname = action.payload.__dirname;
+    // eslint-disable-next-line
     const __filename = action.payload.__filename;
     const exports = {};
     const module = {
-      require: $_require,
+      require: $require,
       exports,
     };
 

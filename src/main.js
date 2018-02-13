@@ -3,14 +3,14 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 
+import 'codemirror/lib/codemirror.css';
+import 'codemirror/theme/monokai.css';
+
+import '@/styles/global.scss';
+
 import App from './App';
 import router from './router';
 import storeDefinitions from './store';
-
-import '@/styles/global.scss';
-import 'codemirror/lib/codemirror.css';
-
-import 'codemirror/theme/monokai.css';
 
 Vue.use(Vuex);
 
@@ -21,8 +21,6 @@ const store = new Vuex.Store(storeDefinitions);
 // store.subscribe(function(mutation, state) {
 //   console.log('Store change', mutation)
 // });
-
-console.log(store);
 
 /* eslint-disable no-new */
 new Vue({

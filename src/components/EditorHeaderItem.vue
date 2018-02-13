@@ -24,8 +24,9 @@
   };
 </script>
 
-<style>
+<style lang="scss">
 .EditorHeader-item {
+  position: relative;
   // flex: 1;
   // flex-basis: auto;
 }

@@ -19,10 +19,14 @@ import debounce from 'lodash/debounce';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/keymap/sublime';
 import 'codemirror/theme/monokai.css';
-import 'codemirror/mode/javascript/javascript.js';
+import 'codemirror/mode/javascript/javascript';
 
 import emmet from '@emmetio/codemirror-plugin';
+
 emmet(CodeMirror);
+
+const VIEWPORT_OFFSET = 20;
+
 
 export default {
   name: 'Editor',
@@ -110,48 +114,44 @@ export default {
         return;
       }
 
-      const VIEWPORT_OFFSET = 20;
-
       const cm = this.getCodeMirror();
       const viewport = cm.getViewport();
 
       cm.operation(() => {
-        // console.log('Updating', Date.now());
         this.widgets.forEach(widget => cm.removeLineWidget(widget));
         this.widgets = [];
 
         // console.time('render');
 
-        const ps =
-          phantoms
-            .filter(p =>
-                p.line >= (viewport.from - VIEWPORT_OFFSET) &&
-                p.line <= (viewport.to + VIEWPORT_OFFSET)
-            )
-            .map(phantom => {
-              const line = phantom.line - 1;
-              const phantomElement = document.createElement('div');
+        phantoms
+          .filter(p =>
+              p.line >= (viewport.from - VIEWPORT_OFFSET) &&
+              p.line <= (viewport.to + VIEWPORT_OFFSET)
+          )
+          .map(phantom => {
+            const line = phantom.line - 1;
+            const phantomElement = document.createElement('div');
 
-              // Enforce nowrap in case a user defined class adds it
-              phantomElement.style.whiteSpace = 'nowrap';
-              phantomElement.classList.add('Phantom');
-              phantomElement.classList.add(phantom.className);
-              phantomElement.textContent = phantom.content;
+            // Enforce nowrap in case a user defined class adds it
+            phantomElement.style.whiteSpace = 'nowrap';
+            phantomElement.classList.add('Phantom');
+            phantomElement.classList.add(phantom.className);
+            phantomElement.textContent = phantom.content;
 
-              this.widgets.push(
-                cm.addLineWidget(line, phantomElement, {
-                  coverGutter: false,
-                  noHScroll: true,
-                })
-              );
+            this.widgets.push(
+              cm.addLineWidget(line, phantomElement, {
+                coverGutter: false,
+                noHScroll: true,
+              })
+            );
 
-              // this.$emit('phantoms-rendered', phantoms);
-              return phantom;
-            });
-            // console.timeEnd('render');
-            // console.log('\n');
-            // console.log(ps.length)
-        });
+            this.$emit('phantoms-rendered', phantoms);
+
+            return phantom;
+          });
+          // console.timeEnd('render');
+          // console.log('\n');
+      });
 
       this.hasDirtyPhantoms = false;
     },
