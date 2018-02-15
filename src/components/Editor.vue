@@ -4,10 +4,9 @@
       ref="editor"
       :value="code"
       :options="cmOptions"
-      @renderLine="onRenderLine"
-      @viewportChange="onCMViewportChange"
-      @ready="onCMReady"
-      @input="onCMCodeChange">
+      @viewportChange="onViewportChange"
+      @ready="onReady"
+      @input="onCodeChange">
     </codemirror>
   </div>
 </template>
@@ -26,16 +25,17 @@ import emmet from '@emmetio/codemirror-plugin';
 
 emmet(CodeMirror);
 
-const VIEWPORT_OFFSET = 20;
-
 export default {
+
   name: 'Editor',
+
   props: {
     code: {
       type: String,
       required: true,
     },
   },
+
   data() {
     return {
       cmOptions: {
@@ -63,10 +63,13 @@ export default {
       },
     };
   },
+
   components: {
     codemirror,
   },
+
   methods: {
+
     addPhantom(newPhantom) {
       const newPhantoms =
         this.phantoms
@@ -85,6 +88,7 @@ export default {
       this.hasDirtyPhantoms = true;
       this.updatePhantomsDelayed(true);
     },
+
     clearPhantoms() {
       this.phantoms = [];
       this.hasDirtyPhantoms = false;
@@ -97,95 +101,202 @@ export default {
             typeof phantom.isExpired === 'function'
               ? !phantom.isExpired(phantom)
               : true
-            )
+            ),
           );
 
       return phantoms;
     },
 
-    onCMReady() {
-      this.$emit('ready');
-    },
-    onCMCodeChange() {
-      this.$emit('change');
-    },
-    onCMViewportChange: debounce(function () {
-      this.updatePhantoms(true);
-    }, 300, {
-      maxWait: 350,
-    }),
     getValue() {
       return this.getCodeMirror().getValue();
     },
+
     getCodeMirror() {
       return this.$refs.editor.codemirror;
     },
+
+    getPhantomsInView(viewport) {
+      const phantoms = this.phantoms.filter(p => this.isPhantomInView(p.line, viewport));
+
+      return phantoms;
+    },
+
+    isPhantomInView(line, viewport, offset=0) {
+      return (
+        line >= (viewport.from - offset) &&
+        line <= (viewport.to + offset)
+      );
+    },
+
     updatePhantoms(force=false) {
       // Don't bother updating the phantoms because it may cause old phantoms
       // to be rendered on a previous old line and then its new line when.
+
       if (!this.hasDirtyPhantoms && !force) {
         return;
       }
 
-      console.log('after:', this.phantoms);
+      this.renderBlockPhantoms();
+      this.renderInlinePhantoms();
 
-      const phantoms = this.getPhantoms();
+      this.hasDirtyPhantoms = false;
+    },
 
-      this.phantoms = phantoms;
-
-      console.log('after:', phantoms);
+    renderBlockPhantoms() {
+      // FIXME: Phantom filtering needs refactoring
+      this.phantoms = this.getPhantoms();
 
       const cm = this.getCodeMirror();
       const viewport = cm.getViewport();
 
       cm.operation(() => {
-        this.widgets.forEach(widget => cm.removeLineWidget(widget));
+        // console.time('render-block');
+
+        // Remove the old phantoms and recycle the widget phantom node
+        const removedPhantomLines =
+          this.widgets.map((widget) => {
+            cm.removeLineWidget(widget);
+            this.onAfterRemoveWidget(widget);
+
+            return widget.line.lineNo();
+          });
+
         this.widgets = [];
 
-        // console.time('render');
+        const addedPhantomLines =
+          this.getPhantomsInView(viewport)
+            .filter(phantom => phantom.layout == null || phantom.layout === 'block')
+            .map((phantom) => {
+              const line = phantom.line - 1;
+              const phantomElement = this.getPhantomElement(phantom);
 
-        phantoms
-          .filter(p =>
-              p.line >= (viewport.from - VIEWPORT_OFFSET) &&
-              p.line <= (viewport.to + VIEWPORT_OFFSET)
-          )
-          .map(phantom => {
-            const line = phantom.line - 1;
-            const phantomElement = document.createElement('div');
+              this.widgets.push(
+                cm.addLineWidget(line, phantomElement, {
+                  coverGutter: false,
+                  noHScroll: true,
+                }),
+              );
 
-            // Enforce nowrap in case a user defined class adds it
-            phantomElement.style.whiteSpace = 'nowrap';
-            phantomElement.classList.add('Phantom');
-            phantomElement.classList.add(phantom.className);
-            phantomElement.textContent = phantom.content;
+              return phantom.line;
+            });
 
-            this.widgets.push(
-              cm.addLineWidget(line, phantomElement, {
-                coverGutter: false,
-                noHScroll: true,
-              })
-            );
+        this.$emit('update-block-phantoms', removedPhantomLines, addedPhantomLines);
 
-            this.$emit('update-phantoms', phantoms);
-
-            return phantom;
-          });
-          // console.timeEnd('render');
-          // console.log('\n');
+        // console.timeEnd('render-block');
       });
-
-      this.hasDirtyPhantoms = false;
     },
 
-    onRenderLine() {},
+    renderInlinePhantoms() {
+      // console.time('render-inline');
+
+      const viewport = this.getCodeMirror().getViewport();
+      const phantoms = this.getPhantomsInView(viewport).filter(phantom => phantom.layout === 'inline');
+
+      for (let i = 0; i < phantoms.length; i += 1) {
+        const phantom = phantoms[i];
+
+        const elementIndex = Math.min(phantom.line - viewport.from - 1, 0);
+
+        // console.log(viewport, 'line:', phantom.line, 'elIndex:', elementIndex)
+
+        const lineElement = this.lines[elementIndex].querySelector('.CodeMirror-line');
+        // TOOD: Could probably remove the query call by keeping track of phantoms. It would
+        //       also play well into element pooling anyway..
+        let phantomElement = lineElement.querySelector('.Phantom');
+
+        if (phantomElement == null) {
+          phantomElement = this.getPhantomElement(phantom);
+          lineElement.appendChild(phantomElement);
+        } else {
+          this.updatePhantomElement(phantomElement, phantom);
+        }
+      }
+
+      this.$emit('update-inline-phantoms', phantoms);
+      // console.timeEnd('render-inline');
+    },
+
+    addElementToPool(element) {
+      this.inlinePhantomPool.push(element);
+    },
+
+    getPooledElement() {
+      if (this.inlinePhantomPool.length) {
+        // console.log('LOOK, POOLING DAD', this.inlinePhantomPool.length,
+        // this.inlinePhantomPool.map(el => el.textContent))
+        return this.inlinePhantomPool.shift();
+      }
+
+      return document.createElement('div');
+    },
+
+    updatePhantomElement(el, { content='', className='', layout }) {
+      // Reset the elements attributes in case they aren't reset wherever they are used
+
+      // Enforce nowrap in case a user defined class adds it
+      el.style.whiteSpace = 'nowrap';
+      el.className = `Phantom is-inline ${className}`;
+
+      el.style.display =
+        layout === 'block' || layout == null
+          ? 'block'
+          : 'inline-block';
+
+      el.id = '';
+      el.textContent = content;
+
+      return el;
+    },
+
+    getPhantomElement(phantom) {
+      const div = this.getPooledElement();
+
+      return this.updatePhantomElement(div, phantom);
+    },
+
+    onAfterRemoveWidget(widget) {
+      this.addElementToPool(widget.node);
+    },
+
+    onReady() {
+      this.$emit('ready');
+    },
+
+    onCodeChange() {
+      this.$emit('change');
+    },
+
+    onViewportChange() {
+      this.updatePhantomsDelayed(true);
+    },
+
+    onRenderLine() {
+      // Note: The set timeout fixes a bug where codemirror overwrites the entire line
+      //       when the cursor moves to the line, resulting in the phantom needing to
+      //       be rewritten.
+      setTimeout(this.renderInlinePhantoms, 0);
+    },
+
   },
+
+  mounted() {
+    const cm = this.getCodeMirror();
+
+    cm.on('renderLine', this.onRenderLine);
+
+    this.lines = this.$refs.editor.$el.querySelector('.CodeMirror-code').children;
+  },
+
   created() {
+    this.maxRecordedViewportLength = 0;
+    this.inlinePhantomPool = [];
     this.phantoms = [];
     this.widgets = [];
     this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
       trailing: true,
     });
   },
+
 };
 </script>
 

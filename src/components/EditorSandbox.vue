@@ -67,12 +67,13 @@ export default {
     },
 
     isPhantomExpired(phantom) {
-      console.log('expired', this.activeExecId > phantom.execId, phantom.execId, this.activeExecId,);
+      // console.log('expired', this.activeExecId > phantom.execId,
+      // phantom.execId, this.activeExecId,);
 
       return this.activeExecId > phantom.execId;
     },
 
-    onEditorChange: debounce(function () {
+    onEditorChange: debounce(function onEditorChange() {
       this.runScript();
     }, 200, {
       trailing: true,
@@ -102,7 +103,8 @@ export default {
             execId: activeExecId,
             content: `\u{1f608} ${error.message}`,
             line: error.loc.line,
-            className: 'Phantom--is-error',
+            className: 'is-error',
+            layout: 'inline',
           });
         }
 
@@ -133,7 +135,8 @@ export default {
             execId,
             content: `\u{1f608} ${error.message}`,
             line: loc.line,
-            className: 'Phantom--is-error',
+            className: 'is-error',
+            layout: 'inline',
           });
         } else {
           // Todo: Figure out smarter way of updating phantoms
@@ -167,7 +170,6 @@ export default {
           this.$refs.editor.updatePhantoms(true);
         } else if (result.expression) {
           const expr = result.expression;
-          this.$emit('response', response);
 
           this.addPhantom({
             isExpired: this.isPhantomExpired,
@@ -175,8 +177,11 @@ export default {
             content: expr.value,
             // content: `${execId}${expr.value}`,
             line: expr.loc.end.line,
+            layout: 'inline',
           });
         }
+
+        this.$emit('response', response);
       }
     },
 

@@ -196,8 +196,12 @@ pre {
   z-index: 1;
 }
 
-.Phantom--is-error {
+.Phantom.is-error {
   color: #ef2f5a;
+}
+
+.Phantom.is-inline {
+  margin-left: 1.5rem;
 }
 
 

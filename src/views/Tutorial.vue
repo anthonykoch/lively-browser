@@ -118,26 +118,27 @@ export default {
 
     errorMessage() {
       return this.error ? this.error.message : '';
-    }
+    },
 
   },
 
   methods: {
 
     onResponseError(error, response) {
-      console.log('ResponseError:', error, '\n');
+      // console.log('ResponseError:', error, '\n');
       this.error = Object.freeze(error);
       this.errorExecId = response.to.id;
     },
 
     onTransformError(error, execId) {
-      console.log('TransformError:', error, '\n');
+      // console.log('TransformError:', error, '\n');
       this.error = Object.freeze(error);
       this.errorExecId = execId;
     },
 
-    onSandboxResponse(response) {
-      console.log('Response', response);
+    onSandboxResponse() {
+      // console.log('Response', response);
+
       // if (this.errorExecId === response.to.id) {
       //   // Don't reset the error message because it will cause the error to
       //   // flash when typing
