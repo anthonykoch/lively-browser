@@ -121,11 +121,21 @@ export default {
       return phantoms;
     },
 
-    isPhantomInView(line, viewport, offset=0) {
-      return (
-        line >= (viewport.from - offset) &&
-        line <= (viewport.to + offset)
-      );
+    /**
+     * Returns true if the line is being rendered on the screen.
+     *
+     * Note: It's important to note that the line index starts from 1. Also, a line may be
+     *       rendered but not necessarily visible on screen.
+     *
+     * @param  {Number}  _line         - The line index (starting from 1)
+     * @param  {Number}  viewport.from
+     * @param  {Number}  viewport.to
+     * @return {Boolean}
+     */
+    isPhantomInView(_line, viewport) {
+      const line = _line - 1;
+
+      return line >= viewport.from && line <= viewport.to;
     },
 
     updatePhantoms(force=false) {
@@ -195,7 +205,9 @@ export default {
       for (let i = 0; i < phantoms.length; i += 1) {
         const phantom = phantoms[i];
 
-        const elementIndex = Math.min(phantom.line - viewport.from - 1, 0);
+        // Note: 1 is subtracted from the index because phantom lines start from 1, not 0
+        const elementIndex = phantom.line - viewport.from - 1;
+        // const elementIndex = Math.min(phantom.line - viewport.from - 1, 0);
 
         // console.log(viewport, 'line:', phantom.line, 'elIndex:', elementIndex)
 

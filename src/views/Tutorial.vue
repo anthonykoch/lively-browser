@@ -28,7 +28,7 @@
       <div style="width: 40%;">
         <div class="EditorPanel">
             <app-editor-sandbox
-              :code="'name'"
+              :code="'name;\n\n'"
               @response="onSandboxResponse"
               @response-error="onResponseError"
               @transform-error="onTransformError"
