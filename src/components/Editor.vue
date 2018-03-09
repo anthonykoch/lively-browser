@@ -92,7 +92,7 @@ export default {
     clearPhantoms() {
       this.phantoms = [];
       this.hasDirtyPhantoms = false;
-      this.updatePhantoms();
+      this.updatePhantoms(true);
     },
 
     getPhantoms() {
@@ -175,7 +175,8 @@ export default {
 
         const addedPhantomLines =
           this.getPhantomsInView(viewport)
-            .filter(phantom => phantom.layout == null || phantom.layout === 'block')
+            // TODO: Uncomment this when removing inline phantoms gets implemented
+            //       .filter(phantom => phantom.layout == null || phantom.layout === 'block')
             .map((phantom) => {
               const line = phantom.line - 1;
               const phantomElement = this.getPhantomElement(phantom);
@@ -198,6 +199,9 @@ export default {
 
     renderInlinePhantoms() {
       // console.time('render-inline');
+      // TODO: Removing older inline phantoms
+
+      return;
 
       const viewport = this.getCodeMirror().getViewport();
       const phantoms = this.getPhantomsInView(viewport).filter(phantom => phantom.layout === 'inline');
@@ -247,12 +251,15 @@ export default {
 
       // Enforce nowrap in case a user defined class adds it
       el.style.whiteSpace = 'nowrap';
-      el.className = `Phantom is-inline ${className}`;
+      // is-inline
+      el.className = `Phantom ${className}`;
 
-      el.style.display =
-        layout === 'block' || layout == null
-          ? 'block'
-          : 'inline-block';
+      el.style.display = 'block';
+
+      // el.style.display =
+      //   layout === 'block' || layout == null
+      //     ? 'block'
+      //     : 'inline-block';
 
       el.id = '';
       el.textContent = content;

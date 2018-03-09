@@ -29,9 +29,9 @@
         <div class="EditorPanel">
             <app-editor-sandbox
               :code="'name;\n\n'"
-              @response="onSandboxResponse"
-              @response-error="onResponseError"
+              @runtime-error="onRuntimeError"
               @transform-error="onTransformError"
+              @done="onSandboxDone"
             >
             </app-editor-sandbox>
 
@@ -124,27 +124,19 @@ export default {
 
   methods: {
 
-    onResponseError(error, response) {
-      // console.log('ResponseError:', error, '\n');
+    onRuntimeError(error) {
       this.error = Object.freeze(error);
-      this.errorExecId = response.to.id;
+      this.errorExecId = error.execId;
+      console.log('Error:', error);
     },
 
-    onTransformError(error, execId) {
-      // console.log('TransformError:', error, '\n');
+    onTransformError(error) {
       this.error = Object.freeze(error);
-      this.errorExecId = execId;
+      this.errorExecId = error.execId;
+      console.log('Error:', error);
     },
 
-    onSandboxResponse() {
-      // console.log('Response', response);
-
-      // if (this.errorExecId === response.to.id) {
-      //   // Don't reset the error message because it will cause the error to
-      //   // flash when typing
-      //   return;
-      // }
-
+    onSandboxDone(payload) {
       this.error = null;
     },
 
@@ -233,7 +225,7 @@ export default {
 }
 
 .EditorError-text {
-  white-space: normal;
+  white-space: pre;
   color: inherit,
 }
 

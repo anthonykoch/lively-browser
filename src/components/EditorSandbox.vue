@@ -4,8 +4,9 @@
       ref="sandbox"
       url="/sandbox.html"
       :origin="origin"
-      @response="onSandboxResponse"
-      @response-error="onSandboxError"
+      @reply="onSandboxReply"
+      @done="onSandboxDone"
+      @runtime-error="onSandboxRuntimeError"
       @load="onSandboxLoaded"
     ></app-sandbox>
     <app-editor
@@ -54,6 +55,11 @@ export default {
 
   methods: {
 
+    renderCoverage(insertions) {
+      this.insertions = insertions;
+      // this.$refs.editor.render
+    },
+
     addPhantom(phantom) {
       this.$refs.editor.addPhantom({
         ...phantom,
@@ -73,17 +79,15 @@ export default {
       return this.activeExecId > phantom.execId;
     },
 
-    onEditorChange: debounce(function onEditorChange() {
-      this.runScript();
-    }, 200, {
-      trailing: true,
-    }),
-
     increaseActiveExecId() {
       return this.activeExecId += 1;
     },
 
-    runScript() {
+    getInsertionLocation(id) {
+      return this.insertions[id].loc;
+    },
+
+    async runScript() {
       if (this.transform == null) {
         return;
       }
@@ -91,25 +95,27 @@ export default {
       const activeExecId = this.increaseActiveExecId();
       const { filename, dirname } = this;
 
-      const data = this.transform(this.$refs.editor.getValue(), { filename });
+      const data = await this.transform(this.$refs.editor.getValue(), { filename });
       const error = data.error;
 
       if (error) {
-        // this.clearPhantoms();
-        this.$emit('transform-error', error, activeExecId);
+        this.$emit('transform-error', { ...error, execId: activeExecId });
 
         if (error.loc) {
           this.addPhantom({
             execId: activeExecId,
-            content: `\u{1f608} ${error.message}`,
+            // Todo: Extract the error message from the stack trace
+            content: `\u{1f608} ${error.name}`,
             line: error.loc.line,
             className: 'is-error',
-            layout: 'inline',
+            // layout: 'inline',
           });
         }
 
         return;
       }
+
+      this.renderCoverage(data.insertions);
 
       this.$refs.sandbox.injectCode({
         input: data.code,
@@ -120,12 +126,18 @@ export default {
       });
     },
 
+    onEditorChange: debounce(function onEditorChange() {
+      this.runScript();
+    }, 200, {
+      trailing: true,
+    }),
+
     onSandboxLoaded() {
       this.runScript();
     },
 
-    onSandboxError(response) {
-      const { payload: { execId, error } } = response;
+    onSandboxRuntimeError(payload) {
+      const { execId, error } = payload;
       const loc = error.loc;
       const hasLocation = loc && Number.isFinite(loc.line) && Number.isFinite(loc.column);
 
@@ -136,59 +148,59 @@ export default {
             content: `\u{1f608} ${error.message}`,
             line: loc.line,
             className: 'is-error',
-            layout: 'inline',
+            // layout: 'inline',
           });
-        } else {
-          // Todo: Figure out smarter way of updating phantoms
-          // this.clearPhantoms();
         }
 
         const message = error.message;
-        // const message = Error.prototype.toString.call(error);
 
-        this.$emit('response-error', {
+        this.$emit('runtime-error', {
           message,
           location,
           loc,
           hasLocation,
-        }, response);
+          execId,
+        });
       }
     },
 
-    onSandboxResponse(response) {
-      // console.log('Response:', response);
+    onSandboxDone(payload) {
+      console.log('SandboxDone:', payload)
 
-      const result = response.payload;
+      this.$refs.editor.updatePhantoms(true);
+      this.$emit('done', payload);
+    },
+
+    onSandboxReply(payload) {
+      console.log('SandboxReplied:', payload);
 
       // Don't render any phantoms for things still going on in previous scripts
-      // console.log('ResponseIds:', result.execId, this.activeExecId);
+      // console.log('ExecIds:', result.execId, this.activeExecId);
 
-      if (result.execId >= this.activeExecId) {
-        const execId = result.execId;
+      if (payload.execId >= this.activeExecId) {
+        const execId = payload.execId;
 
-        if (response.done) {
-          this.$refs.editor.updatePhantoms(true);
-        } else if (result.expression) {
-          const expr = result.expression;
+        if (payload.expression) {
+          const expr = payload.expression;
+          const loc = this.getInsertionLocation(expr.insertion.id);
 
           this.addPhantom({
             isExpired: this.isPhantomExpired,
             execId,
             content: expr.value,
-            // content: `${execId}${expr.value}`,
-            line: expr.loc.end.line,
-            layout: 'inline',
+            line: loc.end.line,
+            // layout: 'inline',
           });
         }
 
-        this.$emit('response', response);
+        this.$emit('reply', payload);
       }
     },
 
   },
 
   async mounted() {
-    const [{ transform }] = await this.imports;
+    const [{ default: transform }] = await this.imports;
 
     this.transform = transform;
 
@@ -200,7 +212,7 @@ export default {
   created() {
     this.phantoms = [];
     this.transform = null;
-    this.imports = Promise.all([import('lively/code')]);
+    this.imports = Promise.all([import('lively-javascript/dist/transform')]);
   },
 
   components: {

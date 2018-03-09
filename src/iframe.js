@@ -1,13 +1,19 @@
-import random from 'lodash/random';
+import sourcemap from 'source-map';
 
-import { run } from 'lively/exec';
-import { createRunner } from 'lively/runner';
-import { createTracker, createRecorder } from 'lively/tracker';
-import { createSendResponse } from 'lively/messages';
+import * as JSUtils from 'lively-javascript/dist/utils';
+import { run } from 'lively-javascript/dist/exec';
+import Talkie from 'editorconnect-node/dist/talkie';
+import * as Messages from 'editorconnect-node/dist/messages';
+
+import thewasms from 'file-loader!source-map/lib/mappings.wasm';
+
+// Initialize the wasms
+sourcemap.SourceMapConsumer.initialize({
+  'lib/mappings.wasm': thewasms,
+});
 
 const DOMAIN = `${window.location.protocol}//${window.location.host}`;
 const ORIGIN = `name:lively-iframe;id:${Math.random() + Math.random()}`;
-const FUNCTION_ID = `LIVELY_INSPECT_${random(1000000, 1999999)}`;
 
 window.process = process;
 
@@ -34,71 +40,66 @@ function loadModule(name) {
 
 const $require = moduleName => loadModule(moduleName);
 
-const actions = {
 
-  'lively.exec'(action, sendResponse) {
-    const recorder = createRecorder();
-    const tracker = createTracker(recorder);
+class Receiver extends Talkie {
 
-    recorder.on('data', (expression) => {
-      sendResponse({
-        execId: action.payload.execId,
-        expression,
-      });
-    });
+  get origin() {
+    return { id: ORIGIN };
+  }
 
-    // eslint-disable-next-line
-    const __dirname = action.payload.__dirname;
-    // eslint-disable-next-line
-    const __filename = action.payload.__filename;
-    const exports = {};
-    const module = {
-      require: $require,
-      exports,
-    };
-
-    // console.log('input:', action.payload.input);
-
-    const result = run(action.payload.input, {
-      tracker,
-      functionId: FUNCTION_ID,
-      __dirname,
-      __filename,
-      module,
-      sourcemap: action.payload.sourcemap,
-    });
-
-    recorder.removeAllListeners();
-
-    return sendResponse({
-      ...result,
-      execId: action.payload.execId,
-    }, { done: true });
-  },
-
-};
-
-const runner = createRunner(actions);
-
-const sender = {
   send(message) {
-    // console.log('IframeResponse:', message);
     window.parent.postMessage(message, DOMAIN);
-  },
+  }
+
 };
+
+const receiver = new Receiver();
+
+receiver.on('lively-javascript:exec', async (payload, reply) => {
+  // eslint-disable-next-line
+  const __dirname = payload.__dirname;
+  // eslint-disable-next-line
+  const __filename = payload.__filename;
+  const exports = {};
+  const module = {
+    require: $require,
+    exports,
+  };
+
+  const result = await run(payload.input, {
+    notifiers: {
+      expression: [
+        (id, value) => {
+          reply({
+            filename: __filename,
+            expression: {
+              insertion: { id },
+              value: JSUtils.serialize(value),
+            },
+          });
+        },
+      ],
+    },
+    env: 'browser',
+    sourcemap: payload.sourcemap,
+    module,
+    __dirname,
+    __filename,
+  });
+
+  if (Number.isFinite(result?.error?.loc?.line)) {
+    // Normalize lines to start at 1 since node errors start at 1.
+    // No need to mess with the column since they start at 0.
+    // result.error.loc.line -= 1;
+  }
+
+  return result;
+});
 
 window.addEventListener('message', ({ data: message }) => {
-  // if (message.type) {
-  //   console.log('IframeCommand:', JSON.stringify({
-  //     type: message.name,
-  //     message,
-  //   }));
-  // }
+  if (Messages.isValid(message)) console.log('IframeIncoming', Date.now(), Messages.isValid(message), message);
 
-  // console.log('IframeIncoming', message)
-  // console.log('IframeReceived', Date.now())
-
-  if (message.type === 'action') {
-    runner.run(message, createSendResponse(message, sender, ORIGIN));
+  if (Messages.isValid(message)) {
+    receiver.dispatch([message]);
   }
 });
