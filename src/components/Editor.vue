@@ -20,16 +20,37 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/keymap/sublime';
 import 'codemirror/theme/monokai.css';
 import 'codemirror/mode/javascript/javascript';
+import 'codemirror/addon/comment/comment';
 
 import emmet from '@emmetio/codemirror-plugin';
 
 emmet(CodeMirror);
+
+const createCoverageMarker = (isCovered) => {
+  const element = document.createElement('div');
+  const state = isCovered ? 'is-covered' : 'is-uncovered';
+
+  element.className = `LivelyCoverageMarker ${state}`;
+  element.textContent = '*';
+
+  return element;
+};
+
+const GUTTER_KEY = 'LivelyCoverageGutter';
 
 export default {
 
   name: 'Editor',
 
   props: {
+    phantoms: {
+      required: true,
+      default: () => Object.freeze([]),
+    },
+    coverage: {
+      required: true,
+      default: () => Object.freeze([]),
+    },
     code: {
       type: String,
       required: true,
@@ -40,6 +61,8 @@ export default {
     return {
       cmOptions: {
         mode: 'javascript',
+
+        gutters: ['CodeMirror-linenumbers', 'LivelyCoverageGutter'],
 
         autoCloseBrackets: true,
         theme: 'monokai',
@@ -70,30 +93,49 @@ export default {
 
   methods: {
 
-    addPhantom(newPhantom) {
-      const newPhantoms =
-        this.phantoms
-          .filter((phantom) => {
-            const isExpired = phantom.isExpired != null && phantom.isExpired(phantom);
-            const shouldRemain = isExpired === false && phantom.line !== newPhantom.line;
-
-            // console.log({shouldRemain, isExpired}, phantom)
-
-            return shouldRemain;
-          });
-
-      newPhantoms.push(newPhantom);
-
-      this.phantoms = newPhantoms;
-      this.hasDirtyPhantoms = true;
-      this.updatePhantomsDelayed(true);
+    clearCoverage() {
+      return this.cm.clearGutter(GUTTER_KEY);
     },
 
-    clearPhantoms() {
-      this.phantoms = [];
-      this.hasDirtyPhantoms = false;
-      this.updatePhantoms(true);
+    renderInitialCoverage(coverage) {
+      this.clearCoverage();
+
+      for (let i = 0; i < coverage.length; i++) {
+        const insertion = coverage[i];
+        const element = createCoverageMarker(false);
+
+        this.cm.setGutterMarker(insertion.loc.start.line - 1, GUTTER_KEY, element);
+      }
     },
+
+    renderCovered(loc) {
+      const element = createCoverageMarker(true);
+
+      this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
+    },
+
+    // addPhantom(newPhantom) {
+    //   this.phantoms =
+    //     this.phantoms
+    //       .filter((phantom) => {
+    //         const isExpired = phantom.isExpired != null && phantom.isExpired(phantom);
+    //         const shouldRemain = isExpired === false && phantom.line !== newPhantom.line;
+
+    //         // console.log({shouldRemain, isExpired}, phantom)
+
+    //         return shouldRemain;
+    //       })
+    //       .concat(newPhantom);
+
+    //   this.hasDirtyPhantoms = true;
+    //   this.updatePhantomsDelayed(true);
+    // },
+
+    // clearPhantoms() {
+    //   this.phantoms = Object.freeze([]);
+    //   this.hasDirtyPhantoms = false;
+    //   this.updatePhantoms(true);
+    // },
 
     getPhantoms() {
       const phantoms =
@@ -108,7 +150,7 @@ export default {
     },
 
     getValue() {
-      return this.getCodeMirror().getValue();
+      return this.cm.getValue();
     },
 
     getCodeMirror() {
@@ -154,18 +196,16 @@ export default {
 
     renderBlockPhantoms() {
       // FIXME: Phantom filtering needs refactoring
-      this.phantoms = this.getPhantoms();
 
-      const cm = this.getCodeMirror();
-      const viewport = cm.getViewport();
+      const viewport = this.cm.getViewport();
 
-      cm.operation(() => {
+      this.cm.operation(() => {
         // console.time('render-block');
 
         // Remove the old phantoms and recycle the widget phantom node
         const removedPhantomLines =
           this.widgets.map((widget) => {
-            cm.removeLineWidget(widget);
+            this.cm.removeLineWidget(widget);
             this.onAfterRemoveWidget(widget);
 
             return widget.line.lineNo();
@@ -182,7 +222,7 @@ export default {
               const phantomElement = this.getPhantomElement(phantom);
 
               this.widgets.push(
-                cm.addLineWidget(line, phantomElement, {
+                this.cm.addLineWidget(line, phantomElement, {
                   coverGutter: false,
                   noHScroll: true,
                 }),
@@ -203,7 +243,7 @@ export default {
 
       return;
 
-      const viewport = this.getCodeMirror().getViewport();
+      const viewport = this.cm.getViewport();
       const phantoms = this.getPhantomsInView(viewport).filter(phantom => phantom.layout === 'inline');
 
       for (let i = 0; i < phantoms.length; i += 1) {
@@ -286,7 +326,7 @@ export default {
     },
 
     onViewportChange() {
-      this.updatePhantomsDelayed(true);
+      // this.updatePhantomsDelayed(true);
     },
 
     onRenderLine() {
@@ -298,22 +338,39 @@ export default {
 
   },
 
+  watch: {
+    phantoms(newPhantoms, oldPhantoms) {
+      this.hasDirtyPhantoms = true;
+      this.updatePhantoms();
+    },
+    coverage(coverage) {
+      console.log(coverage)
+      this.clearCoverage();
+      this.renderInitialCoverage(coverage);
+    },
+  },
+
   mounted() {
-    const cm = this.getCodeMirror();
+    const cm = this.cm = this.getCodeMirror();
 
     cm.on('renderLine', this.onRenderLine);
 
     this.lines = this.$refs.editor.$el.querySelector('.CodeMirror-code').children;
   },
 
+  destroyed() {
+    this.cm = null;
+    this.lines = null;
+  },
+
   created() {
     this.maxRecordedViewportLength = 0;
     this.inlinePhantomPool = [];
-    this.phantoms = [];
+    // this.phantoms = [];
     this.widgets = [];
-    this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
-      trailing: true,
-    });
+    // this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
+    //   trailing: true,
+    // });
   },
 
 };

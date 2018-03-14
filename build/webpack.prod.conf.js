@@ -67,6 +67,7 @@ const webpackConfig = merge(baseWebpackConfig, {
         ? 'index.html'
         : config.build.index,
       template: 'index.html',
+      excludeChunks: ['iframe'],
       inject: true,
       minify: {
         removeComments: true,
