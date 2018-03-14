@@ -72,14 +72,17 @@ export default {
 
     addPhantom(phantom) {
       const newPhantoms = this.phantoms
-        .filter(p =>
-            (p.execId < phantom.execId && p.line > phantom.line) ||
-            p.execId === phantom.execId
-          )
+        .filter(p => {
+          return (
+              (p.execId < phantom.execId && p.line > phantom.line) ||
+              (p.execId === phantom.execId)
+            );
+        })
         .concat([{
           ...phantom,
           editorId: this.id,
-        }]);
+        }])
+        .filter(p => !this.instrument.isLiteral({ type: p.type }));
 
       this.phantoms = Object.freeze(newPhantoms);
     },
@@ -92,8 +95,8 @@ export default {
       return this.activeExecId += 1;
     },
 
-    getCoverageLocation(id) {
-      return this.coverage[id].loc;
+    getInsertion(id) {
+      return this.coverage[id];
     },
 
     async runScript() {
@@ -124,7 +127,7 @@ export default {
         return;
       }
 
-      this.coverage = Object.freeze(data.insertions);
+      this.renderInitialCoverage(data.insertions);
 
       this.$refs.sandbox.injectCode({
         input: data.code,
@@ -174,15 +177,17 @@ export default {
       if (payload.execId >= this.activeExecId) {
         const execId = payload.execId;
 
-        if (payload.expression) {
-          const expr = payload.expression;
-          const loc = this.getCoverageLocation(expr.insertion.id);
+        // Avoid rendering phantoms for things that are redundant, link strings, numbers
+        if (payload.expression && !this.instrument.isLiteral(payload.expression)) {
+          const insertion = this.getInsertion(payload.expression.insertion.id);
+          const loc = insertion.loc;
 
           this.$refs.editor.renderCovered(loc);
 
           this.addPhantom({
+            type: insertion.type,
             execId,
-            content: expr.value,
+            content: payload.expression.value,
             line: loc.end.line,
             // layout: 'inline',
           });
@@ -201,8 +206,9 @@ export default {
   },
 
   async mounted() {
-    const [{ default: transform }] = await this.imports;
+    const [{ default: transform }, instrument] = await this.imports;
 
+    this.instrument = instrument;
     this.transform = transform;
 
     if (this.execOnReady) {
@@ -213,7 +219,10 @@ export default {
   created() {
     this.phantoms = [];
     this.transform = null;
-    this.imports = Promise.all([import('lively-javascript/dist/transform')]);
+    this.imports = Promise.all([
+      import('lively-javascript/dist/transform'),
+      import('lively-javascript/dist/instrument'),
+    ]);
   },
 
   components: {
