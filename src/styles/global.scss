@@ -206,3 +206,44 @@ pre {
 
 
 
+
+$marker-coverage-covered: #47e286; // green
+$marker-coverage-default: #ffffff;
+$marker-coverage-uncovered: #e54545; // red
+
+.LivelyCoverageGutter {
+  width: 20px;
+}
+
+
+.LivelyCoverageMarker {
+  color: transparent;
+  position: relative;
+
+  &:after {
+    background-color: $marker-coverage-default;
+    border-radius: 2px;
+    content: '';
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    z-index: 999999999;
+  }
+
+}
+
+.LivelyCoverageMarker.is-covered {
+  &:after {
+    background-color: $marker-coverage-covered;
+  }
+}
+
+.LivelyCoverageMarker.is-uncovered {
+  &:after {
+    background-color: $marker-coverage-uncovered;
+  }
+}
+

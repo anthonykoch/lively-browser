@@ -5,6 +5,8 @@ import { run } from 'lively-javascript/dist/exec';
 import Talkie from 'editorconnect-node/dist/talkie';
 import * as Messages from 'editorconnect-node/dist/messages';
 
+import logger from '@/logger';
+
 import thewasms from 'file-loader!source-map/lib/mappings.wasm';
 
 // Initialize the wasms
@@ -18,7 +20,7 @@ const ORIGIN = `name:lively-iframe;id:${Math.random() + Math.random()}`;
 window.process = process;
 
 // eslint-disable-next-line
-console.log('Iframe.js started');
+logger.info('Iframe.js started');
 
 function loadModule(name) {
   /* eslint-disable global-require */
@@ -97,7 +99,7 @@ receiver.on('lively-javascript:exec', async (payload, reply) => {
 });
 
 window.addEventListener('message', ({ data: message }) => {
-  if (Messages.isValid(message)) console.log('IframeIncoming', Date.now(), Messages.isValid(message), message);
+  if (Messages.isValid(message)) logger.info('IframeIncoming', Date.now(), Messages.isValid(message), message);
 
   if (Messages.isValid(message)) {
     receiver.dispatch([message]);

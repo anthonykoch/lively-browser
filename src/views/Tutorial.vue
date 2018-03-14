@@ -127,17 +127,21 @@ export default {
     onRuntimeError(error) {
       this.error = Object.freeze(error);
       this.errorExecId = error.execId;
-      console.log('Error:', error);
     },
 
     onTransformError(error) {
-      this.error = Object.freeze(error);
-      this.errorExecId = error.execId;
-      console.log('Error:', error);
+      // The timeout avoids showing a gigantic babel code frame error every time
+      // the syntax is invalid.
+      this.showErrorTimeoutId = setTimeout(() => {
+        this.error = Object.freeze(error);
+        this.errorExecId = error.execId;
+      }, 500);
     },
 
     onSandboxDone(payload) {
       this.error = null;
+
+      clearTimeout(this.showErrorTimeoutId);
     },
 
   },

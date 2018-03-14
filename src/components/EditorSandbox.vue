@@ -7,13 +7,13 @@
       @reply="onSandboxReply"
       @done="onSandboxDone"
       @runtime-error="onSandboxRuntimeError"
-      @load="onSandboxLoaded"
     ></app-sandbox>
     <app-editor
       ref="editor"
       style="font-size: 14px"
       :code="code"
       :phantoms="phantoms"
+      :coverage="coverage"
       @change="onEditorChange">
     </app-editor>
   </div>
@@ -25,6 +25,8 @@ import cuid from 'cuid';
 
 import AppEditor from '@/components/Editor';
 import AppSandbox from '@/components/Sandbox';
+
+import logger from '@/logger';
 
 export default {
 
@@ -43,48 +45,55 @@ export default {
 
   data() {
     return {
+      coverage: Object.freeze([]),
+      phantoms: Object.freeze([]),
       origin: `name:lively-editor;id:${cuid()}`,
-      isSandboxLoaded: false,
       id: cuid(),
       activeExecId: 0,
       filename: 'lively.js',
       dirname: '/',
-      console,
+      logger,
     };
   },
 
   methods: {
 
-    renderCoverage(insertions) {
-      this.insertions = insertions;
-      // this.$refs.editor.render
+    renderInitialCoverage(coverage) {
+      this.coverage = Object.freeze(coverage);
+      this.$refs.editor.renderInitialCoverage(coverage);
+    },
+
+    eraseOutdatedPhantoms() {
+      this.phantoms =
+        Object.freeze(
+            this.phantoms.filter(p => p.execId >= this.activeExecId)
+          );
     },
 
     addPhantom(phantom) {
-      this.$refs.editor.addPhantom({
-        ...phantom,
-        isExpired: this.isPhantomExpired,
-        editorId: this.id,
-      });
+      const newPhantoms = this.phantoms
+        .filter(p =>
+            (p.execId < phantom.execId && p.line > phantom.line) ||
+            p.execId === phantom.execId
+          )
+        .concat([{
+          ...phantom,
+          editorId: this.id,
+        }]);
+
+      this.phantoms = Object.freeze(newPhantoms);
     },
 
     clearPhantoms() {
-      this.$refs.editor.clearPhantoms();
-    },
-
-    isPhantomExpired(phantom) {
-      // console.log('expired', this.activeExecId > phantom.execId,
-      // phantom.execId, this.activeExecId,);
-
-      return this.activeExecId > phantom.execId;
+      this.phantoms = Object.freeze([]);
     },
 
     increaseActiveExecId() {
       return this.activeExecId += 1;
     },
 
-    getInsertionLocation(id) {
-      return this.insertions[id].loc;
+    getCoverageLocation(id) {
+      return this.coverage[id].loc;
     },
 
     async runScript() {
@@ -105,7 +114,7 @@ export default {
           this.addPhantom({
             execId: activeExecId,
             // Todo: Extract the error message from the stack trace
-            content: `\u{1f608} ${error.name}`,
+            content: error.name,
             line: error.loc.line,
             className: 'is-error',
             // layout: 'inline',
@@ -115,7 +124,7 @@ export default {
         return;
       }
 
-      this.renderCoverage(data.insertions);
+      this.coverage = Object.freeze(data.insertions);
 
       this.$refs.sandbox.injectCode({
         input: data.code,
@@ -132,10 +141,6 @@ export default {
       trailing: true,
     }),
 
-    onSandboxLoaded() {
-      this.runScript();
-    },
-
     onSandboxRuntimeError(payload) {
       const { execId, error } = payload;
       const loc = error.loc;
@@ -145,7 +150,7 @@ export default {
         if (hasLocation) {
           this.addPhantom({
             execId,
-            content: `\u{1f608} ${error.message}`,
+            content: error.message,
             line: loc.line,
             className: 'is-error',
             // layout: 'inline',
@@ -164,28 +169,18 @@ export default {
       }
     },
 
-    onSandboxDone(payload) {
-      console.log('SandboxDone:', payload)
-
-      this.$refs.editor.updatePhantoms(true);
-      this.$emit('done', payload);
-    },
-
     onSandboxReply(payload) {
-      console.log('SandboxReplied:', payload);
-
       // Don't render any phantoms for things still going on in previous scripts
-      // console.log('ExecIds:', result.execId, this.activeExecId);
-
       if (payload.execId >= this.activeExecId) {
         const execId = payload.execId;
 
         if (payload.expression) {
           const expr = payload.expression;
-          const loc = this.getInsertionLocation(expr.insertion.id);
+          const loc = this.getCoverageLocation(expr.insertion.id);
+
+          this.$refs.editor.renderCovered(loc);
 
           this.addPhantom({
-            isExpired: this.isPhantomExpired,
             execId,
             content: expr.value,
             line: loc.end.line,
@@ -195,6 +190,12 @@ export default {
 
         this.$emit('reply', payload);
       }
+    },
+
+    onSandboxDone(payload) {
+      this.eraseOutdatedPhantoms();
+      this.$refs.editor.updatePhantoms(true);
+      this.$emit('done', payload);
     },
 
   },

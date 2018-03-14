@@ -9,6 +9,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin');
 const portfinder = require('portfinder');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
 const HOST = process.env.HOST;
 const PORT = process.env.PORT && Number(process.env.PORT);
@@ -72,6 +73,15 @@ const devWebpackConfig = merge(baseWebpackConfig, {
         ignore: ['.*'],
       },
     ]),
+    // new UglifyJsPlugin({
+    //   uglifyOptions: {
+    //     compress: {
+    //       warnings: false
+    //     }
+    //   },
+    //   // sourceMap: config.build.productionSourceMap,
+    //   parallel: true
+    // }),
   ],
 });
 

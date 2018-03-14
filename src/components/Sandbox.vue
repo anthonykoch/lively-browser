@@ -54,16 +54,6 @@ export default {
       if (Messages.isValid(data)) {
         this.talkie.dispatch([data]);
       }
-
-      // console.log('SandboxReceived:', response);
-
-      // const isValid = isResponseFromOrigin(response, this.$props.origin);
-
-      // if (isValid && response.payload.error) {
-      //   this.$emit('response-error', response);
-      // } else if (isValid) {
-      //   this.$emit('response', response);
-      // }
     },
 
     async injectCode(options) {
@@ -83,7 +73,8 @@ export default {
       };
 
       if (this.talkie) {
-        return this.talkie.call('lively-javascript:exec', outgoingPayload, {
+        console.time('exec');
+        const call = await this.talkie.call('lively-javascript:exec', outgoingPayload, {
           onReply: (payload) => {
             this.$emit('reply', {
               ...payload,
@@ -103,6 +94,10 @@ export default {
             });
           },
         });
+
+        console.timeEnd('exec');
+
+        return call;
       }
 
       return null;
@@ -111,7 +106,7 @@ export default {
     async onLoad() {
       this.$emit('load');
       this.loaded = true;
-      this.queue.forEach(options => this.injectCode(options));
+      this.queue.slice(0, 1).forEach(options => this.injectCode(options));
     },
   },
 
@@ -121,6 +116,7 @@ export default {
 
   destroyed() {
     window.removeEventListener('message', this.onIframeMessage);
+    this.queue = [];
   },
 
   created() {
@@ -132,7 +128,3 @@ export default {
 
 };
 </script>
-
-<style>
-
-</style>
