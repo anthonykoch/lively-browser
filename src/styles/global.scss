@@ -201,7 +201,15 @@ pre {
 }
 
 .Phantom.is-inline {
-  margin-left: 1.5rem;
+  margin-left: 1.25rem;
+}
+
+.PhantomAttribute {
+  &:after {
+    color: #318e6c;
+    content: attr(data-inline-phantom-content);
+    margin-left: 1.25rem;
+  }
 }
 
 

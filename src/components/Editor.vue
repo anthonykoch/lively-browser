@@ -38,6 +38,14 @@ const createCoverageMarker = (isCovered) => {
 
 const GUTTER_KEY = 'LivelyCoverageGutter';
 
+const classes = {
+  codeMirrorLine: '.CodeMirror-line',
+};
+
+const attributes = {
+  phantomInline: 'data-inline-phantom-content',
+};
+
 export default {
 
   name: 'Editor',
@@ -169,9 +177,9 @@ export default {
      * Note: It's important to note that the line index starts from 1. Also, a line may be
      *       rendered but not necessarily visible on screen.
      *
-     * @param  {Number}  _line         - The line index (starting from 1)
-     * @param  {Number}  viewport.from
-     * @param  {Number}  viewport.to
+     * @param  {Number} _line         - The line index (starting from 1)
+     * @param  {Number} viewport.from
+     * @param  {Number} viewport.to
      * @return {Boolean}
      */
     isPhantomInView(_line, viewport) {
@@ -196,7 +204,6 @@ export default {
 
     renderBlockPhantoms() {
       // FIXME: Phantom filtering needs refactoring
-
       const viewport = this.cm.getViewport();
 
       this.cm.operation(() => {
@@ -216,7 +223,7 @@ export default {
         const addedPhantomLines =
           this.getPhantomsInView(viewport)
             // TODO: Uncomment this when removing inline phantoms gets implemented
-            //       .filter(phantom => phantom.layout == null || phantom.layout === 'block')
+            .filter(phantom => phantom.layout !== 'inline')
             .map((phantom) => {
               const line = phantom.line - 1;
               const phantomElement = this.getPhantomElement(phantom);
@@ -237,35 +244,42 @@ export default {
       });
     },
 
+    /**
+     * This is completely and totally hacky because codemirror doesn't actually
+     * support REAL inline widgets. To add to the annoyance, codemirror just
+     * completely re-renders a line, meaning that when the user types, on a line, . Commence the hackities in 3, 2, 1. GO.
+     * @return {void}
+     */
     renderInlinePhantoms() {
       // console.time('render-inline');
-      // TODO: Removing older inline phantoms
-
-      return;
 
       const viewport = this.cm.getViewport();
       const phantoms = this.getPhantomsInView(viewport).filter(phantom => phantom.layout === 'inline');
 
+      for (let i = 0; i < this.lines.length; i++) {
+        this.lines[i]
+          .querySelector(classes.codeMirrorLine)
+          .setAttribute(attributes.phantomInline, '');
+      }
+
+      this.oldPhantoms.forEach(p => {
+        this.cm.removeLineClass(p.line - 1);
+      });
+
       for (let i = 0; i < phantoms.length; i += 1) {
         const phantom = phantoms[i];
 
-        // Note: 1 is subtracted from the index because phantom lines start from 1, not 0
+        // Note: 1 is subtracted from the index because phantom lines start from 1
+        //       and this.lines is an array (which is 0 based)
         const elementIndex = phantom.line - viewport.from - 1;
-        // const elementIndex = Math.min(phantom.line - viewport.from - 1, 0);
-
         // console.log(viewport, 'line:', phantom.line, 'elIndex:', elementIndex)
 
-        const lineElement = this.lines[elementIndex].querySelector('.CodeMirror-line');
-        // TOOD: Could probably remove the query call by keeping track of phantoms. It would
-        //       also play well into element pooling anyway..
-        let phantomElement = lineElement.querySelector('.Phantom');
+        console.log({elementIndex})
 
-        if (phantomElement == null) {
-          phantomElement = this.getPhantomElement(phantom);
-          lineElement.appendChild(phantomElement);
-        } else {
-          this.updatePhantomElement(phantomElement, phantom);
-        }
+        const lineElement = this.lines[elementIndex].querySelector(classes.codeMirrorLine);
+
+        lineElement.setAttribute(attributes.phantomInline, phantom.content);
+        this.cm.addLineClass(phantom.line - 1, 'text', 'PhantomAttribute');
       }
 
       this.$emit('update-inline-phantoms', phantoms);
@@ -289,17 +303,20 @@ export default {
     updatePhantomElement(el, { content='', className='', layout }) {
       // Reset the elements attributes in case they aren't reset wherever they are used
 
+      const layoutClassName =
+        layout === 'inline'
+          ? 'is-inline'
+          : 'is-block';
+
       // Enforce nowrap in case a user defined class adds it
       el.style.whiteSpace = 'nowrap';
-      // is-inline
-      el.className = `Phantom ${className}`;
-
+      el.className = `Phantom ${className} ${layoutClassName}`;
       el.style.display = 'block';
 
-      // el.style.display =
-      //   layout === 'block' || layout == null
-      //     ? 'block'
-      //     : 'inline-block';
+      el.style.display =
+        layout === 'inline'
+          ? 'inline-block'
+          : 'block';
 
       el.id = '';
       el.textContent = content;
@@ -326,14 +343,14 @@ export default {
     },
 
     onViewportChange() {
-      // this.updatePhantomsDelayed(true);
+      this.updatePhantomsDelayed(true);
     },
 
     onRenderLine() {
       // Note: The set timeout fixes a bug where codemirror overwrites the entire line
       //       when the cursor moves to the line, resulting in the phantom needing to
       //       be rewritten.
-      setTimeout(this.renderInlinePhantoms, 0);
+      // setTimeout(this.renderInlinePhantoms, 0);
     },
 
   },
@@ -342,9 +359,9 @@ export default {
     phantoms(newPhantoms, oldPhantoms) {
       this.hasDirtyPhantoms = true;
       this.updatePhantoms();
+      this.oldPhantoms = oldPhantoms;
     },
     coverage(coverage) {
-      console.log(coverage)
       this.clearCoverage();
       this.renderInitialCoverage(coverage);
     },
@@ -366,11 +383,12 @@ export default {
   created() {
     this.maxRecordedViewportLength = 0;
     this.inlinePhantomPool = [];
+    this.oldPhantoms = [];
     // this.phantoms = [];
     this.widgets = [];
-    // this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
-    //   trailing: true,
-    // });
+    this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
+      trailing: true,
+    });
   },
 
 };

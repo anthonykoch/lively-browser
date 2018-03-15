@@ -82,7 +82,7 @@ export default {
           ...phantom,
           editorId: this.id,
         }])
-        .filter(p => !this.instrument.isLiteral({ type: p.type }));
+        .filter(p => console.log(p.type) || !this.instrument.isLiteral({ type: p.type }));
 
       this.phantoms = Object.freeze(newPhantoms);
     },
@@ -120,7 +120,7 @@ export default {
             content: error.name,
             line: error.loc.line,
             className: 'is-error',
-            // layout: 'inline',
+            layout: 'inline',
           });
         }
 
@@ -156,7 +156,7 @@ export default {
             content: error.message,
             line: loc.line,
             className: 'is-error',
-            // layout: 'inline',
+            layout: 'inline',
           });
         }
 
@@ -189,7 +189,7 @@ export default {
             execId,
             content: payload.expression.value,
             line: loc.end.line,
-            // layout: 'inline',
+            layout: 'inline',
           });
         }
 
