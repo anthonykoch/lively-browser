@@ -184,20 +184,36 @@ pre {
 
 
 
+.CodeMirror pre {
+  padding: 0 4px;
+}
+
+/**
+ * 1. Needs ot match .CodeMirror pre left padding value
+ */
 
 .Phantom {
   color: #318e6c;
+  display: inline-block;
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+  margin-left: 4px; // [1]
+  // max-height: 200px;
+  // overflow: auto;
+  position: relative;
   top: 0;
-  white-space: nowrap;
-  // margin-left: 1rem;
+  white-space: pre;
   z-index: 1;
 }
 
-.Phantom.is-error {
+.Phantom-message {
+  border-bottom: 1px solid transparent;
+}
+
+.Phantom.is-error > .Phantom-message {
   color: #ef2f5a;
+  border-bottom: 1px solid #ef2f5a;
 }
 
 .Phantom.is-inline {
@@ -207,9 +223,27 @@ pre {
 
 
 
+
+
 $marker-coverage-covered: #47e286; // green
 $marker-coverage-default: #ffffff;
-$marker-coverage-uncovered: #e54545; // red
+$marker-coverage-uncovered: #eeeeee;
+$marker-coverage-error: #e54545; // red
+
+.CoveredBlock {
+  border-bottom: 1px solid transparent;
+}
+
+.CoveredBlock.is-covered {
+  border-color: rgba($marker-coverage-covered, 0.5);
+}
+
+.CoveredBlock.is-uncovered {
+  border-color: rgba($marker-coverage-uncovered, 0.5);
+}
+
+
+
 
 .LivelyCoverageGutter {
   width: 20px;

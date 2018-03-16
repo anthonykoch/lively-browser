@@ -4,6 +4,17 @@ import {
 export default {
   // namespaced: true,
   state: {
+    code: `
+var user = {
+  username: 'musefan42',
+};
+
+const a = () => {
+  return user.username + 'memes';
+};
+
+a();
+`,
   },
   mutations: {
 

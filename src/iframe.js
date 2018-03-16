@@ -69,18 +69,21 @@ receiver.on('lively-javascript:exec', async (payload, reply) => {
   };
 
   const result = await run(payload.input, {
-    notifiers: {
-      expression: [
-        (id, value) => {
-          reply({
-            filename: __filename,
-            expression: {
-              insertion: { id },
-              value: JSUtils.serialize(value),
-            },
-          });
-        },
-      ],
+    track(id, hasValue, value) {
+      if (hasValue) {
+        reply({
+          filename: __filename,
+          insertion: { id },
+          expression: {
+            value: JSUtils.serialize(value),
+          },
+        });
+      } else {
+        reply({
+          filename: __filename,
+          insertion: { id },
+        });
+      }
     },
     env: 'browser',
     sourcemap: payload.sourcemap,
@@ -88,6 +91,8 @@ receiver.on('lively-javascript:exec', async (payload, reply) => {
     __dirname,
     __filename,
   });
+
+  // console.log(result?.error?.stack)
 
   if (Number.isFinite(result?.error?.loc?.line)) {
     // Normalize lines to start at 1 since node errors start at 1.

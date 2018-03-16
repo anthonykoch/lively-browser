@@ -28,7 +28,7 @@
       <div style="width: 40%;">
         <div class="EditorPanel">
             <app-editor-sandbox
-              :code="'name;\n\n'"
+              :code="code"
               @runtime-error="onRuntimeError"
               @transform-error="onTransformError"
               @done="onSandboxDone"
@@ -80,9 +80,9 @@ export default {
 
   data() {
     return {
-      console,
       error: null,
       errorExecId: null,
+      console,
     };
   },
 
@@ -97,7 +97,7 @@ export default {
   computed: {
 
     ...mapState({
-      code: state => state.editor.value,
+      code: state => state.editor.code,
       article: state => state.articles.article,
       articlesMeta: state => state.articles.articlesMeta,
     }),

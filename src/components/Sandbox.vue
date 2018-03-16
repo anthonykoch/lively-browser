@@ -73,7 +73,7 @@ export default {
       };
 
       if (this.talkie) {
-        console.time('exec');
+        // console.time('exec');
         const call = await this.talkie.call('lively-javascript:exec', outgoingPayload, {
           onReply: (payload) => {
             this.$emit('reply', {
@@ -95,7 +95,7 @@ export default {
           },
         });
 
-        console.timeEnd('exec');
+        // console.timeEnd('exec');
 
         return call;
       }

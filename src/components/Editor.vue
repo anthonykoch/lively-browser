@@ -38,6 +38,19 @@ const createCoverageMarker = (isCovered) => {
 
 const GUTTER_KEY = 'LivelyCoverageGutter';
 
+const getSingleCharFromLoc = (simpleLoc) => {
+  return [{
+    line: simpleLoc.line - 1,
+    ch: simpleLoc.column,
+  }, {
+    line: simpleLoc.line - 1,
+    ch: simpleLoc.column + 1
+  }];
+};
+
+const createRangeId =
+  (start, end, execId) => `${execId}>${start.line}:${start.ch},${end.line}:${end.ch}`;;
+
 export default {
 
   name: 'Editor',
@@ -97,45 +110,74 @@ export default {
       return this.cm.clearGutter(GUTTER_KEY);
     },
 
-    renderInitialCoverage(coverage) {
-      this.clearCoverage();
+    renderInitialCoverage(coverage, execId) {
 
-      for (let i = 0; i < coverage.length; i++) {
-        const insertion = coverage[i];
-        const element = createCoverageMarker(false);
+      this.cm.operation(() => {
+        this.clearCoverage();
 
-        this.cm.setGutterMarker(insertion.loc.start.line - 1, GUTTER_KEY, element);
+        Object.values(this.markers).forEach(marker => {
+          marker.clear();
+        });
+
+        for (let i = 0; i < coverage.length; i++) {
+          if (this.markers.hasOwnProperty(i)) {
+            this.markers[i].clear();
+          }
+
+          const insertion = coverage[i];
+          const loc = insertion.loc;
+
+          if (insertion.type === 'BlockStatement') {
+            const [start, end] = getSingleCharFromLoc(loc.start);
+            const rangeId = createRangeId(start, end, execId);
+
+            const marker = this.cm.doc.markText(start, end, {
+              className: 'CoveredBlock is-uncovered',
+              title: 'This block has been entered',
+            });
+            this.markers[rangeId] = marker;
+          } else {
+            const element = createCoverageMarker(false);
+
+            this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
+          }
+        }
+      });
+    },
+
+    renderCovered(id, execId) {
+      const insertion = this.coverage[id];
+      const locStart = insertion.loc.start;
+      const line = locStart.line - 1
+      const [start, end] = getSingleCharFromLoc(locStart);
+      const rangeId = createRangeId(start, end, execId);
+
+      // console.log(this.markers)
+      // console.log(rangeId)
+      // console.log(this.markers[rangeId])
+
+      if (this.markers.hasOwnProperty(rangeId)) {
+        this.markers[rangeId].clear();
+      }
+
+      if (insertion.type === 'BlockStatement') {
+        const marker = this.cm.doc.markText(start, end, {
+          className: 'CoveredBlock is-covered',
+          title: 'This block has been entered',
+        });
+        this.markers[rangeId] = marker;
+      } else {
+        const element = createCoverageMarker(true);
+
+        this.cm.setGutterMarker(line, GUTTER_KEY, element);
       }
     },
 
-    renderCovered(loc) {
-      const element = createCoverageMarker(true);
-
-      this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
+    clearPhantoms() {
+      this.phantoms = Object.freeze([]);
+      this.hasDirtyPhantoms = false;
+      this.updatePhantoms(true);
     },
-
-    // addPhantom(newPhantom) {
-    //   this.phantoms =
-    //     this.phantoms
-    //       .filter((phantom) => {
-    //         const isExpired = phantom.isExpired != null && phantom.isExpired(phantom);
-    //         const shouldRemain = isExpired === false && phantom.line !== newPhantom.line;
-
-    //         // console.log({shouldRemain, isExpired}, phantom)
-
-    //         return shouldRemain;
-    //       })
-    //       .concat(newPhantom);
-
-    //   this.hasDirtyPhantoms = true;
-    //   this.updatePhantomsDelayed(true);
-    // },
-
-    // clearPhantoms() {
-    //   this.phantoms = Object.freeze([]);
-    //   this.hasDirtyPhantoms = false;
-    //   this.updatePhantoms(true);
-    // },
 
     getPhantoms() {
       const phantoms =
@@ -189,7 +231,6 @@ export default {
       }
 
       this.renderBlockPhantoms();
-      this.renderInlinePhantoms();
 
       this.hasDirtyPhantoms = false;
     },
@@ -215,8 +256,6 @@ export default {
 
         const addedPhantomLines =
           this.getPhantomsInView(viewport)
-            // TODO: Uncomment this when removing inline phantoms gets implemented
-            //       .filter(phantom => phantom.layout == null || phantom.layout === 'block')
             .map((phantom) => {
               const line = phantom.line - 1;
               const phantomElement = this.getPhantomElement(phantom);
@@ -237,72 +276,41 @@ export default {
       });
     },
 
-    renderInlinePhantoms() {
-      // console.time('render-inline');
-      // TODO: Removing older inline phantoms
-
-      return;
-
-      const viewport = this.cm.getViewport();
-      const phantoms = this.getPhantomsInView(viewport).filter(phantom => phantom.layout === 'inline');
-
-      for (let i = 0; i < phantoms.length; i += 1) {
-        const phantom = phantoms[i];
-
-        // Note: 1 is subtracted from the index because phantom lines start from 1, not 0
-        const elementIndex = phantom.line - viewport.from - 1;
-        // const elementIndex = Math.min(phantom.line - viewport.from - 1, 0);
-
-        // console.log(viewport, 'line:', phantom.line, 'elIndex:', elementIndex)
-
-        const lineElement = this.lines[elementIndex].querySelector('.CodeMirror-line');
-        // TOOD: Could probably remove the query call by keeping track of phantoms. It would
-        //       also play well into element pooling anyway..
-        let phantomElement = lineElement.querySelector('.Phantom');
-
-        if (phantomElement == null) {
-          phantomElement = this.getPhantomElement(phantom);
-          lineElement.appendChild(phantomElement);
-        } else {
-          this.updatePhantomElement(phantomElement, phantom);
-        }
-      }
-
-      this.$emit('update-inline-phantoms', phantoms);
-      // console.timeEnd('render-inline');
-    },
-
     addElementToPool(element) {
-      this.inlinePhantomPool.push(element);
+      this.phantomPool.push(element);
     },
 
     getPooledElement() {
-      if (this.inlinePhantomPool.length) {
-        // console.log('LOOK, POOLING DAD', this.inlinePhantomPool.length,
-        // this.inlinePhantomPool.map(el => el.textContent))
-        return this.inlinePhantomPool.shift();
+      if (this.phantomPool.length) {
+        // console.log('LOOK, POOLING DAD', this.phantomPool.length,
+        // this.phantomPool.map(el => el.textContent))
+        return this.phantomPool.shift();
       }
 
       return document.createElement('div');
     },
 
-    updatePhantomElement(el, { content='', className='', layout }) {
+    updatePhantomElement(el, { column, line, content='', className='', layout }) {
       // Reset the elements attributes in case they aren't reset wherever they are used
+      // console.time('t');
 
-      // Enforce nowrap in case a user defined class adds it
-      el.style.whiteSpace = 'nowrap';
-      // is-inline
+      const indentWidth = this.cm.getIndentWIdth
+      const lineText = this.cm.getLine(line - 1);
+      const token = this.cm.getTokenAt({ line, ch: 0 });
+      const whitespace =
+        Number.isFinite(column)
+          ? ' '.repeat(column)
+          : ' '.repeat(token.state.indented);
+
+      el.style.whiteSpace = 'pre';
       el.className = `Phantom ${className}`;
-
       el.style.display = 'block';
+      el.innerHTML = `<span class="Phantom-indent">${whitespace}</span><span class="Phantom-message"></span>`;
 
-      // el.style.display =
-      //   layout === 'block' || layout == null
-      //     ? 'block'
-      //     : 'inline-block';
+      let message = el.querySelector('.Phantom-message');
 
-      el.id = '';
-      el.textContent = content;
+      message.textContent = content;
+      // console.timeEnd('t');
 
       return el;
     },
@@ -326,14 +334,7 @@ export default {
     },
 
     onViewportChange() {
-      // this.updatePhantomsDelayed(true);
-    },
-
-    onRenderLine() {
-      // Note: The set timeout fixes a bug where codemirror overwrites the entire line
-      //       when the cursor moves to the line, resulting in the phantom needing to
-      //       be rewritten.
-      setTimeout(this.renderInlinePhantoms, 0);
+      this.updatePhantomsDelayed(true);
     },
 
   },
@@ -343,34 +344,24 @@ export default {
       this.hasDirtyPhantoms = true;
       this.updatePhantoms();
     },
-    coverage(coverage) {
-      console.log(coverage)
-      this.clearCoverage();
-      this.renderInitialCoverage(coverage);
-    },
   },
 
   mounted() {
-    const cm = this.cm = this.getCodeMirror();
-
-    cm.on('renderLine', this.onRenderLine);
-
-    this.lines = this.$refs.editor.$el.querySelector('.CodeMirror-code').children;
+   this.cm = this.getCodeMirror();
   },
 
   destroyed() {
     this.cm = null;
-    this.lines = null;
   },
 
   created() {
     this.maxRecordedViewportLength = 0;
-    this.inlinePhantomPool = [];
-    // this.phantoms = [];
+    this.phantomPool = [];
+    this.markers = {};
     this.widgets = [];
-    // this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
-    //   trailing: true,
-    // });
+    this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
+      trailing: true,
+    });
   },
 
 };

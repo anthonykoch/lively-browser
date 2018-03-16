@@ -59,8 +59,9 @@ export default {
   methods: {
 
     renderInitialCoverage(coverage) {
+      // console.log(coverage);
       this.coverage = Object.freeze(coverage);
-      this.$refs.editor.renderInitialCoverage(coverage);
+      this.$refs.editor.renderInitialCoverage(coverage, this.activeExecId);
     },
 
     eraseOutdatedPhantoms() {
@@ -110,6 +111,8 @@ export default {
       const data = await this.transform(this.$refs.editor.getValue(), { filename });
       const error = data.error;
 
+      // console.log(data.code)
+
       if (error) {
         this.$emit('transform-error', { ...error, execId: activeExecId });
 
@@ -117,8 +120,9 @@ export default {
           this.addPhantom({
             execId: activeExecId,
             // Todo: Extract the error message from the stack trace
-            content: error.name,
+            content: error.name?.trim(),
             line: error.loc.line,
+            column: error.loc.column,
             className: 'is-error',
             // layout: 'inline',
           });
@@ -155,12 +159,13 @@ export default {
             execId,
             content: error.message,
             line: loc.line,
+            column: loc.column,
             className: 'is-error',
             // layout: 'inline',
           });
         }
 
-        const message = error.message;
+        const message = error.message.trim();
 
         this.$emit('runtime-error', {
           message,
@@ -174,26 +179,30 @@ export default {
 
     onSandboxReply(payload) {
       // Don't render any phantoms for things still going on in previous scripts
-      if (payload.execId >= this.activeExecId) {
-        const execId = payload.execId;
+      const execId = payload.execId;
+
+      if (execId >= this.activeExecId) {
 
         // Avoid rendering phantoms for things that are redundant, link strings, numbers
-        if (payload.expression && !this.instrument.isLiteral(payload.expression)) {
-          const insertion = this.getInsertion(payload.expression.insertion.id);
+        if (payload.expression) {
+          const insertion = this.getInsertion(payload.insertion.id);
           const loc = insertion.loc;
-
-          this.$refs.editor.renderCovered(loc);
 
           this.addPhantom({
             type: insertion.type,
             execId,
-            content: payload.expression.value,
+            content: '// ' + payload.expression.value,
             line: loc.end.line,
+            // column: loc.start.column,
             // layout: 'inline',
           });
         }
 
         this.$emit('reply', payload);
+      }
+
+      if (payload.insertion) {
+        this.$refs.editor.renderCovered(payload.insertion.id, execId);
       }
     },
 
