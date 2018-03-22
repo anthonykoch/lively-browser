@@ -59,12 +59,6 @@ const devWebpackConfig = merge(baseWebpackConfig, {
       chunks: ['app'],
       inject: true,
     }),
-    new HtmlWebpackPlugin({
-      filename: 'sandbox.html',
-      template: 'sandbox.html',
-      inject: true,
-      chunks: ['iframe'],
-    }),
     // copy custom static assets
     new CopyWebpackPlugin([
       {

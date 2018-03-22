@@ -4,6 +4,7 @@
       ref="sandbox"
       url="/sandbox.html"
       :origin="origin"
+      @busy="onSandboxBusy"
       @reply="onSandboxReply"
       @done="onSandboxDone"
       @runtime-error="onSandboxRuntimeError"
@@ -50,7 +51,7 @@ export default {
       origin: `name:lively-editor;id:${cuid()}`,
       id: cuid(),
       activeExecId: 0,
-      filename: 'lively.js',
+      filename: '/lively.js',
       dirname: '/',
       logger,
     };
@@ -61,7 +62,7 @@ export default {
     renderInitialCoverage(coverage) {
       // console.log(coverage);
       this.coverage = Object.freeze(coverage);
-      this.$refs.editor.renderInitialCoverage(coverage, this.activeExecId);
+      this.$refs.editor.renderInitialCoverage(coverage.items, this.activeExecId);
     },
 
     eraseOutdatedPhantoms() {
@@ -82,8 +83,7 @@ export default {
         .concat([{
           ...phantom,
           editorId: this.id,
-        }])
-        .filter(p => !this.instrument.isLiteral({ type: p.type }));
+        }]);
 
       this.phantoms = Object.freeze(newPhantoms);
     },
@@ -97,7 +97,18 @@ export default {
     },
 
     getInsertion(id) {
-      return this.coverage[id];
+      return this.coverage.items[id];
+    },
+
+    isSkippable(insertion, meta) {
+      const node = insertion.node;
+
+      return (
+          meta.isPromise                              ||
+          this.instrument.isLiteral(node)             ||
+          insertion.context === 'ReturnStatement'     ||
+          insertion.context === 'VariableDeclaration'
+        );
     },
 
     async runScript() {
@@ -111,7 +122,13 @@ export default {
       const data = await this.transform(this.$refs.editor.getValue(), { filename });
       const error = data.error;
 
-      // console.log(data.code)
+      console.log(data.code);
+
+      // console.log(data.badLoops);
+
+      if (data.badLoops?.length) {
+        return this.$emit('potential-freeze', data.badLoops);
+      }
 
       if (error) {
         this.$emit('transform-error', { ...error, execId: activeExecId });
@@ -131,7 +148,10 @@ export default {
         return;
       }
 
-      this.renderInitialCoverage(data.insertions);
+      this.renderInitialCoverage({
+        execId: this.activeExecId,
+        items: data.insertions,
+      });
 
       this.$refs.sandbox.injectCode({
         input: data.code,
@@ -143,7 +163,7 @@ export default {
     },
 
     onEditorChange: debounce(function onEditorChange() {
-      this.runScript();
+      // this.runScript();
     }, 200, {
       trailing: true,
     }),
@@ -161,7 +181,6 @@ export default {
             line: loc.line,
             column: loc.column,
             className: 'is-error',
-            // layout: 'inline',
           });
         }
 
@@ -177,32 +196,42 @@ export default {
       }
     },
 
+    onSandboxBusy(time) {
+      this.$emit('busy', time);
+    },
+
     onSandboxReply(payload) {
       // Don't render any phantoms for things still going on in previous scripts
       const execId = payload.execId;
+
+      // console.log('Reply:', payload.execId, this.activeExecId)
 
       if (execId >= this.activeExecId) {
 
         // Avoid rendering phantoms for things that are redundant, link strings, numbers
         if (payload.expression) {
+          const meta = payload.meta;
           const insertion = this.getInsertion(payload.insertion.id);
-          const loc = insertion.loc;
 
-          this.addPhantom({
-            type: insertion.type,
-            execId,
-            content: '// ' + payload.expression.value,
-            line: loc.end.line,
-            // column: loc.start.column,
-            // layout: 'inline',
-          });
+          if (!this.isSkippable(insertion, meta)) {
+            const loc = insertion.node.loc;
+
+            this.addPhantom({
+              insertion,
+              execId,
+              content: payload.expression.value,
+              line: loc.end.line,
+            });
+          }
         }
 
         this.$emit('reply', payload);
       }
 
       if (payload.insertion) {
-        this.$refs.editor.renderCovered(payload.insertion.id, execId);
+        const item = this.coverage.items[payload.insertion.id];
+
+        this.$refs.editor.renderCovered(item, execId);
       }
     },
 
@@ -212,11 +241,19 @@ export default {
       this.$emit('done', payload);
     },
 
+    onKeydown(cm, event) {
+      if (event.ctrlKey && event.which === 13) {
+        this.runScript();
+      }
+    },
+
   },
 
   async mounted() {
     const [{ default: transform }, instrument] = await this.imports;
 
+    this.cm = this.$refs.editor.cm;
+    this.cm.on('keydown', this.onKeydown);
     this.instrument = instrument;
     this.transform = transform;
 
@@ -232,6 +269,10 @@ export default {
       import('lively-javascript/dist/transform'),
       import('lively-javascript/dist/instrument'),
     ]);
+  },
+
+  destroyed() {
+    this.cm.off('keydown', this.onKeydown);
   },
 
   components: {

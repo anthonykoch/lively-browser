@@ -69,7 +69,7 @@ pre {
   h4,
   h5,
   h6 {
-    font-family: Comfortaa;
+    font-family: $app-heading-font-family;
     font-weight: 400;
     padding-left: $app-article-padding;
     padding-right: $app-article-padding;
@@ -101,8 +101,8 @@ pre {
   // }
 
   > p {
-    font-family: Nunito Sans;
-    font-size: 16px;
+    font-family: $app-text-font-family;
+    font-size: $app-text-font-size;
     padding-left: $app-article-padding;
     padding-right: $app-article-padding;
   }
@@ -168,25 +168,27 @@ pre {
   font-family: inherit;
 }
 
-// .CodeMirror-code > div {
-//   display: flex;
-// }
+.CodeMirror-code > div {
+  display: flex;
+}
 
-// .CodeMirror-linewidget {
-//   height: 0;
-//   overflow: visible;
-//   pointer-events: none;
-// }
+.CodeMirror-linewidget {
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
 
 .CodeMirror-foldgutter {
   width: 1rem;
 }
 
-
-
 .CodeMirror pre {
   padding: 0 4px;
 }
+
+
+
+
 
 /**
  * 1. Needs ot match .CodeMirror pre left padding value
@@ -211,15 +213,19 @@ pre {
   border-bottom: 1px solid transparent;
 }
 
-.Phantom.is-error > .Phantom-message {
+.Phantom-messageListItem {
+  // background-color: rgba(226, 217, 217, 0.5);
+  // color: rgba(black, 0.6);
+}
+
+.Phantom-messageListItem:nth-child(n+2) {
+  margin-left: 2px;
+}
+
+.Phantom-messageListItem.is-error {
   color: #ef2f5a;
   border-bottom: 1px solid #ef2f5a;
 }
-
-.Phantom.is-inline {
-  margin-left: 1.5rem;
-}
-
 
 
 

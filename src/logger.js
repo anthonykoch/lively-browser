@@ -1,5 +1,5 @@
 import logger from 'loglevel';
 
-logger.disableAll();
+// logger.disableAll();
 
 export default logger;

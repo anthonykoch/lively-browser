@@ -24,7 +24,6 @@ module.exports = {
   context: path.resolve(__dirname, '../'),
   entry: {
     app: ['@babel/polyfill', './src/main.js'],
-    iframe: ['@babel/polyfill', './src/iframe.js'],
   },
   output: {
     path: config.build.assetsRoot,

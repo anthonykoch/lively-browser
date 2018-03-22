@@ -18,7 +18,9 @@
             </button>
           </div> -->
           <article class="Article">
-            <div class="Article-header">Marinara</div>
+            <div class="Article-header">
+              <span>Marinara</span>
+            </div>
 
             <h2 class="Article-title">{{ article.meta.title }}<span class="Article-meta">memes</span></h2>
             <div class="Article-body markdown markdown--styled" v-html="section.content"></div>
@@ -26,37 +28,62 @@
         </div>
       </div>
       <div style="width: 40%;">
+        <transition
+          enter-active-class="animated fadeIn"
+          leave-active-class="animated fadeOut"
+          :duration="300"
+        >
+          <div class="EditorNotification" v-show="isShowingBusyMessage">
+            <p class="EditorNotification-message">
+                The web worker running your code seems to be hanging. If you'd like to terminate the web worker, press terminate below. Otherwise, be careful, and watch your CPU usage!
+            </p>
+            <div class="EditorNotification-actions">
+              <button
+                class="EditorNotification-actionItem"
+                @click="restartSandbox"
+              >
+                Kill Script
+              </button>
+            </div>
+          </div>
+        </transition>
         <div class="EditorPanel">
-            <app-editor-sandbox
-              :code="code"
-              @runtime-error="onRuntimeError"
-              @transform-error="onTransformError"
-              @done="onSandboxDone"
-            >
-            </app-editor-sandbox>
+          <div class="EditorToolbar">
+            <button class="EditorToolbar-run" @click="restartSandbox">
+              <span class="ion" :class="{ 'is-running': isRunning, 'ion-play': isRunning, 'ion-pause': !isRunning }"></span>
+            </button>
+          </div>
+          <app-editor-sandbox
+            ref="editor"
+            :code="code"
+            @busy="showBusyMessage"
+            @runtime-error="onRuntimeError"
+            @transform-error="onTransformError"
+            @done="onSandboxDone"
+          >
+          </app-editor-sandbox>
 
-            <transition
-              name="lols"
-              :duration="400"
-              enter-active-class="animated fadeIn bounceIn"
-              leave-active-class="animated fadeOut bounceOut"
-            >
-              <div class="EditorError" v-show="error != null">
-                <span class="EditorError-location">{{ errorLocation }}</span>
-                <span class="EditorError-text">{{ errorMessage }}</span>
+          <transition
+            :duration="400"
+            enter-active-class="animated fadeIn bounceIn"
+            leave-active-class="animated fadeOut bounceOut"
+          >
+            <div class="EditorError" v-show="error != null">
+              <span class="EditorError-location">{{ errorLocation }}</span>
+              <span class="EditorError-text">{{ errorMessage }}</span>
+            </div>
+          </transition>
+
+          <!-- <app-editor-header>
+            <app-editor-header-item :flex="1">
+
+            </app-editor-header-item>
+            <app-editor-header-item>
+              <div class="buttonList">
+                <button class="button button--settings"></button>
               </div>
-            </transition>
-
-            <!-- <app-editor-header>
-              <app-editor-header-item :flex="1">
-
-              </app-editor-header-item>
-              <app-editor-header-item>
-                <div class="buttonList">
-                  <button class="button button--settings"></button>
-                </div>
-              </app-editor-header-item>
-            </app-editor-header> -->
+            </app-editor-header-item>
+          </app-editor-header> -->
         </div>
       </div>
     </div>
@@ -80,8 +107,10 @@ export default {
 
   data() {
     return {
+      isRunning: true,
       error: null,
       errorExecId: null,
+      isShowingBusyMessage: false,
       console,
     };
   },
@@ -124,6 +153,16 @@ export default {
 
   methods: {
 
+    restartSandbox() {
+      console.log(this.$refs.editor.$refs.sandbox)
+      this.$refs.editor.$refs.sandbox.restart();
+      this.isShowingBusyMessage = false;
+    },
+
+    showBusyMessage() {
+      this.isShowingBusyMessage = true;
+    },
+
     onRuntimeError(error) {
       this.error = Object.freeze(error);
       this.errorExecId = error.execId;
@@ -158,6 +197,100 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
 
+.EditorNotification {
+  background-color: #3e3e36;
+  background-color: #2b292b;
+  background-color: #eae9ea;
+  // background-color: #383830;
+  // background-color: #333333;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px 0 rgba(black, 0.1), 0 12px 35px -2px rgba(0, 0, 0, 0.26);
+  max-width: 100%;
+  padding-top: 1rem;
+  position: absolute;
+  // left: -2rem;
+  // right: 1rem;
+  top: 1rem;
+  width: 400px;
+  z-index: 999;
+}
+
+.EditorNotification-message {
+  color: rgba(black, 0.6);
+  font-size: 12px;
+  line-height: 1.8;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+// - Orange #f29100
+// - Seafoam #9bc2d8
+
+.EditorNotification-actions {
+  background-color: rgba(white, 0.06);
+  padding: 0.5rem 1rem 1rem;
+  text-align: right;
+}
+
+.EditorNotification-actionItem {
+  background-color: #ef276d;
+  background-color: #e8b92c;
+  background-color: transparent;
+  // background-color: #f29100;
+  // box-shadow: 0 2px 4px 0 rgba(black, 0.15);
+  // border: 1px solid transparent;
+  border: 1px solid rgba(black, 0.6);
+  border-radius: 3px;
+  font-family: inherit;
+  // color: white;
+  color: rgba(black, 0.82);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.5;
+  outline: 0;
+  padding: 6px 20px;
+  transition-duration: 250ms;
+  transition-property: background-color, color, box-shadow;
+  user-select: none;
+
+  &:hover {
+    background-color: rgba(black, 0.82);
+    color: white;
+    // box-shadow: 0 7px 10px 0 rgba(black, 0.2);
+  }
+}
+
+.EditorToolbar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+}
+
+.EditorToolbar-run {
+  @include button;
+  // background-color: #f5256f;
+  background-color: #d8cc6d;
+  border-radius: 3px;
+  box-shadow: 0 8px 22px -3px rgba(black, 0.5);
+  color: white;
+  // border-left: 1px solid rgba(black, 0.1);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+
+  &.is-running {
+    background-color: #e84c3d;
+  }
+
+  > span {
+    filter: drop-shadow(3px 3px 6px rgba(black, 0.2));
+    font-size: 15px;
+  }
+}
 
 .Article {
   height: 100vh;
@@ -165,28 +298,50 @@ export default {
 }
 
 .Article-header {
-  background-color: #352d30;
-  color: #f29100;
+  background-color: #f29100;
+  color: white;
   font-size: 40px;
-  font-family: Comfortaa;
+  font-family: Oswald;
   text-transform: uppercase;
   letter-spacing: 2px;
   padding-left: 4rem;
   font-size: 13px;
   padding-bottom: 40px;
   padding-top: 40px;
+
+  > span {
+    background-color: #f29100;
+    padding: 2px 0px;
+    position: relative;
+    z-index: 1;
+
+    &:before {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid white;
+      left: 0;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      height: 30px;
+      width: 30px;
+      z-index: -1;
+    }
+
+  }
 }
 
 .Article-title {
   letter-spacing: 1px;
   letter-spacing: 0.25px;
   font-size: 40px;
-  font-weight: 500;
+  font-family: Oswald;
+  font-weight: 300;
+  letter-spacing: 1px;
   padding-left: $app-article-padding;
   padding-right: $app-article-padding;
   padding-bottom: 1.5rem;
   margin-top: 4rem;
-  font-family: Comfortaa;
 }
 
 .Article-meta {

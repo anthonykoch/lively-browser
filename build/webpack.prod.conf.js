@@ -67,7 +67,6 @@ const webpackConfig = merge(baseWebpackConfig, {
         ? 'index.html'
         : config.build.index,
       template: 'index.html',
-      excludeChunks: ['iframe'],
       inject: true,
       minify: {
         removeComments: true,
@@ -78,13 +77,6 @@ const webpackConfig = merge(baseWebpackConfig, {
       },
       // necessary to consistently work with multiple chunks via CommonsChunkPlugin
       chunksSortMode: 'dependency'
-    }),
-    new HtmlWebpackPlugin({
-      filename: 'sandbox.html',
-      template: 'sandbox.html',
-      chunksSortMode: 'manual',
-      chunks: ['manifest', 'iframe'],
-      inject: true,
     }),
     // keep module.id stable when vendor modules does not change
     new webpack.HashedModuleIdsPlugin(),

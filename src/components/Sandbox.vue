@@ -1,11 +1,11 @@
 <template>
   <div>
-    <iframe
+    <!-- <iframe
       frameborder="0"
       style="display: none;"
       :src="url"
       @load="onLoad"
-      ref="iframe"></iframe>
+      ref="iframe"></iframe> -->
   </div>
 </template>
 
@@ -14,13 +14,14 @@ import Talkie from 'editorconnect-node/dist/talkie';
 import * as Messages from 'editorconnect-node/dist/messages';
 import cuid from 'cuid';
 
-const DOMAIN = `${window.location.protocol}//${window.location.host}`;
+import logger from '@/logger';
+import Worker from 'worker-loader!@/sandbox';
 
-class IframeTalkie extends Talkie {
+class SandboxTalkie extends Talkie {
 
-  constructor(iframe) {
-    super();
-    this.iframe = iframe;
+  constructor(sender, options) {
+    super(options);
+    this.sender = sender;
   }
 
   get origin() {
@@ -28,7 +29,7 @@ class IframeTalkie extends Talkie {
   }
 
   send(message) {
-    this.iframe.contentWindow.postMessage(message, DOMAIN);
+    this.sender.postMessage(message);
   }
 
 }
@@ -50,17 +51,22 @@ export default {
 
   methods: {
 
-    onIframeMessage({ data }) {
-      if (Messages.isValid(data)) {
-        this.talkie.dispatch([data]);
+    onMessage({ data: messages }) {
+      if (Array.isArray(messages)) {
+        const isValid = messages.every(message => Messages.isValid(message));
+
+        if (isValid) {
+          this.talkie.dispatch(messages);
+        } else {
+          throw new Error('Invalid Talkie message ' + JSON.stringify(message));
+        }
+      } else if (messages.sandboxReady) {
+        this.onWorkerReady()
       }
     },
 
     async injectCode(options) {
-      if (!this.loaded) {
-        this.queue.push(options);
-        return null;
-      }
+      this.token?.destroy?.();
 
       const { input, execId, filename, dirname, sourcemap } = options;
 
@@ -74,14 +80,33 @@ export default {
 
       if (this.talkie) {
         // console.time('exec');
-        const call = await this.talkie.call('lively-javascript:exec', outgoingPayload, {
-          onReply: (payload) => {
+        const start = Date.now();
+
+        const token = this.talkie.call('lively-javascript:exec', outgoingPayload, {
+          keepAlive: true,
+
+          doneTimeout: 10000,
+
+          replyTimeout: 10000,
+
+          onReply: (payload, part) => {
+            // const elapsed = Date.now() - start;
+            // const replysRate = part / elapsed;
+            // console.log(part, replysRate)
+
+            if (part > 3000) {
+              token.destroy();
+              this.restart();
+              this.$emit('force-restart');
+            }
+
             this.$emit('reply', {
               ...payload,
               execId,
             });
           },
-          onDone: (payload) => {
+
+          onDone: (payload, parts) => {
             let event = 'done';
 
             if (payload.error) {
@@ -96,11 +121,16 @@ export default {
         });
 
         // console.timeEnd('exec');
+        this.lastToken = token;
 
-        return call;
+        return token.promise;
       }
 
       return null;
+    },
+
+    onWorkerReady() {
+      this.talkie.startPings();
     },
 
     async onLoad() {
@@ -108,22 +138,52 @@ export default {
       this.loaded = true;
       this.queue.slice(0, 1).forEach(options => this.injectCode(options));
     },
+
+    restart() {
+      this.stop();
+      this.start();
+    },
+
+    stop() {
+      logger.info('Stopping sandbox');
+
+      if (this.worker) {
+        this.worker.terminate();
+        this.worker.removeEventListener('message', this.onMessage);
+      }
+
+      if (this.talkie) {
+        this.talkie.stopPings();
+        this.talkie.removeAllListeners();
+      }
+
+      logger.info('Sandbox stopped');
+    },
+
+    start() {
+      this.stop();
+
+      this.worker = new Worker();
+      this.worker.addEventListener('message', this.onMessage);
+      this.talkie = new SandboxTalkie(this.worker, { pingFrequency: 100 });
+
+      let lastTime = Date.now();
+
+      this.talkie.on('this:failed-ping', () => {
+        this.$emit('busy', Date.now() - lastTime);
+      });
+
+      logger.info('Sandbox started');
+    },
+
   },
 
   mounted() {
-    this.talkie = new IframeTalkie(this.$refs.iframe);
+    this.start();
   },
 
   destroyed() {
-    window.removeEventListener('message', this.onIframeMessage);
-    this.queue = [];
-  },
-
-  created() {
-    this.queue = [];
-    this.loaded = false;
-
-    window.addEventListener('message', this.onIframeMessage);
+    this.stop();
   },
 
 };

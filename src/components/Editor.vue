@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="Editor">
     <codemirror
       ref="editor"
       :value="code"
@@ -86,7 +86,7 @@ export default {
         viewportMargin: 15,
         showCursorWhenSelecting: true,
         styleActiveLine: true,
-        tabWidth: 2,
+        tabSize: 2,
 
         // Required by Emmet
         markTagPairs: true,
@@ -111,7 +111,6 @@ export default {
     },
 
     renderInitialCoverage(coverage, execId) {
-
       this.cm.operation(() => {
         this.clearCoverage();
 
@@ -125,7 +124,7 @@ export default {
           }
 
           const insertion = coverage[i];
-          const loc = insertion.loc;
+          const loc = insertion.node.loc;
 
           if (insertion.type === 'BlockStatement') {
             const [start, end] = getSingleCharFromLoc(loc.start);
@@ -145,9 +144,8 @@ export default {
       });
     },
 
-    renderCovered(id, execId) {
-      const insertion = this.coverage[id];
-      const locStart = insertion.loc.start;
+    renderCovered(insertion, execId) {
+      const locStart = insertion.node.loc.start;
       const line = locStart.line - 1
       const [start, end] = getSingleCharFromLoc(locStart);
       const rangeId = createRangeId(start, end, execId);
@@ -236,41 +234,54 @@ export default {
     },
 
     renderBlockPhantoms() {
-      // FIXME: Phantom filtering needs refactoring
-
       const viewport = this.cm.getViewport();
+      const phantomsInView = this.getPhantomsInView(viewport);
+
+      this.phantomsByLine = phantomsInView.reduce((groups, phantom) => {
+        const line = phantom.line - 1;
+        let grouping = null;
+
+        if (!groups.hasOwnProperty(line)) {
+          groups[line] = grouping = [];
+        } else {
+          grouping = groups[line];
+        }
+
+        grouping.push(phantom);
+
+        return groups;
+      }, {});
+
+      this.widgetsByLine = {};
 
       this.cm.operation(() => {
         // console.time('render-block');
 
         // Remove the old phantoms and recycle the widget phantom node
-        const removedPhantomLines =
-          this.widgets.map((widget) => {
-            this.cm.removeLineWidget(widget);
-            this.onAfterRemoveWidget(widget);
-
-            return widget.line.lineNo();
-          });
+        this.widgets.forEach((widget) => {
+          widget.clear();
+          this.addElementToPool(widget.node);
+        });
 
         this.widgets = [];
 
-        const addedPhantomLines =
-          this.getPhantomsInView(viewport)
-            .map((phantom) => {
-              const line = phantom.line - 1;
-              const phantomElement = this.getPhantomElement(phantom);
+        Object.entries(this.phantomsByLine)
+          .forEach(([l, phantoms]) => {
+            const line = l | 0;
 
-              this.widgets.push(
-                this.cm.addLineWidget(line, phantomElement, {
-                  coverGutter: false,
-                  noHScroll: true,
-                }),
-              );
-
-              return phantom.line;
+            const phantomElement = this.getPhantomElement({
+              line,
+              contents: phantoms.slice(0, 10),
             });
 
-        this.$emit('update-block-phantoms', removedPhantomLines, addedPhantomLines);
+            const widget =
+              this.cm.addLineWidget(line, phantomElement, {
+                coverGutter: false,
+                noHScroll: true,
+              });
+            this.widgetsByLine[line] = widget;
+            this.widgets.push(widget);
+          });
 
         // console.timeEnd('render-block');
       });
@@ -290,9 +301,9 @@ export default {
       return document.createElement('div');
     },
 
-    updatePhantomElement(el, { column, line, content='', className='', layout }) {
+    updatePhantomElement(el, { column, line, contents, className='' }) {
       // Reset the elements attributes in case they aren't reset wherever they are used
-      // console.time('t');
+      // console.time('updatePhantomElement');
 
       const indentWidth = this.cm.getIndentWIdth
       const lineText = this.cm.getLine(line - 1);
@@ -303,14 +314,29 @@ export default {
           : ' '.repeat(token.state.indented);
 
       el.style.whiteSpace = 'pre';
-      el.className = `Phantom ${className}`;
+      el.className = `Phantom`;
       el.style.display = 'block';
-      el.innerHTML = `<span class="Phantom-indent">${whitespace}</span><span class="Phantom-message"></span>`;
+      el.innerHTML = `<span class="Phantom-indent">${whitespace}</span><span class="Phantom-messageList"></span>`;
 
-      let message = el.querySelector('.Phantom-message');
+      const fragment = document.createDocumentFragment();
 
-      message.textContent = content;
-      // console.timeEnd('t');
+      contents.forEach((phantom, i) => {
+        const div = document.createElement('span');
+        const { content, className='' } = phantom;
+        const comma =
+          contents.length > 1 && i != contents.length - 1
+            ? ', '
+            : '';
+
+        div.textContent = String(content) + comma;
+        div.className = `Phantom-messageListItem ${className}`;
+        fragment.appendChild(div);
+      });
+
+      let messageList = el.querySelector('.Phantom-messageList');
+
+      messageList.appendChild(fragment);
+      // console.timeEnd('updatePhantomElement');
 
       return el;
     },
@@ -319,10 +345,6 @@ export default {
       const div = this.getPooledElement();
 
       return this.updatePhantomElement(div, phantom);
-    },
-
-    onAfterRemoveWidget(widget) {
-      this.addElementToPool(widget.node);
     },
 
     onReady() {
@@ -350,7 +372,9 @@ export default {
    this.cm = this.getCodeMirror();
   },
 
-  destroyed() {
+  beforeDestroy() {
+    // this.clearPhantoms();
+    // this.clearCoverage();
     this.cm = null;
   },
 
@@ -359,6 +383,7 @@ export default {
     this.phantomPool = [];
     this.markers = {};
     this.widgets = [];
+    this.widgetsByLine = {};
     this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
       trailing: true,
     });
@@ -376,7 +401,7 @@ export default {
  *    it can take 10,000 lines without lagging.
  */
 
-.container {
+.Editor {
   font-size: inherit;
   height: 100%;
   line-height: inherit;

@@ -14,10 +14,10 @@ sourcemap.SourceMapConsumer.initialize({
   'lib/mappings.wasm': thewasms,
 });
 
-const DOMAIN = `${window.location.protocol}//${window.location.host}`;
+// const DOMAIN = `${window.location.protocol}//${window.location.host}`;
 const ORIGIN = `name:lively-iframe;id:${Math.random() + Math.random()}`;
 
-window.process = process;
+// window.process = process;
 
 // eslint-disable-next-line
 logger.info('Iframe.js started');
@@ -42,15 +42,39 @@ function loadModule(name) {
 
 const $require = moduleName => loadModule(moduleName);
 
+const CHUNK_TIMEOUT = 150;
+const CHUNK_SIZE = 150;
 
 class Receiver extends Talkie {
+
+  constructor() {
+    super();
+    this.queue = [];
+    this.start();
+  }
+
+  start() {
+    const loop = () => {
+      console.log('CHUNKY BOIS');
+      postMessage(this.queue.slice(0, CHUNK_SIZE));
+      this.queue = this.queue.slice(CHUNK_SIZE);
+      this.timeoutId = setTimeout(loop, CHUNK_TIMEOUT);
+    }
+
+    loop();
+  }
+
+  stop() {
+    clearTimeout(this.timeoutId);
+  }
 
   get origin() {
     return { id: ORIGIN };
   }
 
   send(message) {
-    window.parent.postMessage(message, DOMAIN);
+    // window.parent.postMessage(message, DOMAIN);
+    this.queue.push(message);
   }
 
 };
@@ -70,20 +94,30 @@ receiver.on('lively-javascript:exec', async (payload, reply) => {
 
   const result = await run(payload.input, {
     track(id, hasValue, value) {
+      // console.log(id, hasValue, value)
+
+      console.time('hey');
       if (hasValue) {
+        // console.log('isexpression')
         reply({
-          filename: __filename,
-          insertion: { id },
-          expression: {
-            value: JSUtils.serialize(value),
-          },
+          // filename: __filename,
+          // insertion: { id },
+          // meta: {
+          //   isPromise: typeof value?.then === 'function',
+          // },
+          // expression: {
+          //   value: 'undefined',
+          //   // value: JSUtils.serialize(value),
+          // },
         });
       } else {
+        // console.log('replying ma dude')
         reply({
-          filename: __filename,
-          insertion: { id },
+          // filename: __filename,
+          // insertion: { id },
         });
       }
+      console.timeEnd('hey');
     },
     env: 'browser',
     sourcemap: payload.sourcemap,
@@ -103,10 +137,15 @@ receiver.on('lively-javascript:exec', async (payload, reply) => {
   return result;
 });
 
-window.addEventListener('message', ({ data: message }) => {
-  if (Messages.isValid(message)) logger.info('IframeIncoming', Date.now(), Messages.isValid(message), message);
+self.addEventListener('message', ({ data: message }) => {
+  if (Messages.isPing(message)) {
+    postMessage([Messages.pong()]);
+  }
 
   if (Messages.isValid(message)) {
+    logger.info('IframeIncoming', Date.now(), Messages.isValid(message), message);
     receiver.dispatch([message]);
   }
 });
+
+postMessage({ sandboxReady: true });
