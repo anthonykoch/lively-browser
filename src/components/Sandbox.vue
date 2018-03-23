@@ -52,22 +52,46 @@ export default {
   methods: {
 
     onMessage({ data: messages }) {
-      if (Array.isArray(messages)) {
-        const isValid = messages.every(message => Messages.isValid(message));
+      // console.log(messages)
 
-        if (isValid) {
-          this.talkie.dispatch(messages);
-        } else {
-          throw new Error('Invalid Talkie message ' + JSON.stringify(message));
-        }
+      if (Messages.isPong(messages[0])) {
+        this.talkie.dispatch(messages);
+      } else if (Array.isArray(messages)) {
+        messages.forEach(message => {
+          // TODO: Would be really nice if we could batch these emits as well, turn reply into replies
+          const execId = message.execId;
+
+          if (message.done) {
+            let event = 'done';
+
+            if (message.payload.error) {
+              event = 'runtime-error';
+            }
+
+            this.$emit(event, {
+              ...message.payload,
+              execId,
+            });
+          } else {
+
+            if (message.part > 4000) {
+              this.restart();
+              return this.$emit('force-restart');
+            }
+
+            this.$emit('reply', {
+              ...message.payload,
+              execId,
+            });
+            this.$emit('reply', message.payload);
+          }
+        });
       } else if (messages.sandboxReady) {
         this.onWorkerReady()
       }
     },
 
     async injectCode(options) {
-      this.token?.destroy?.();
-
       const { input, execId, filename, dirname, sourcemap } = options;
 
       const outgoingPayload = {
@@ -79,51 +103,11 @@ export default {
       };
 
       if (this.talkie) {
-        // console.time('exec');
-        const start = Date.now();
-
-        const token = this.talkie.call('lively-javascript:exec', outgoingPayload, {
-          keepAlive: true,
-
-          doneTimeout: 10000,
-
-          replyTimeout: 10000,
-
-          onReply: (payload, part) => {
-            // const elapsed = Date.now() - start;
-            // const replysRate = part / elapsed;
-            // console.log(part, replysRate)
-
-            if (part > 3000) {
-              token.destroy();
-              this.restart();
-              this.$emit('force-restart');
-            }
-
-            this.$emit('reply', {
-              ...payload,
-              execId,
-            });
-          },
-
-          onDone: (payload, parts) => {
-            let event = 'done';
-
-            if (payload.error) {
-              event = 'runtime-error';
-            }
-
-            this.$emit(event, {
-              ...payload,
-              execId,
-            });
-          },
+        this.worker.postMessage({
+          action: 'exec',
+          meta: { execId },
+          payload: outgoingPayload,
         });
-
-        // console.timeEnd('exec');
-        this.lastToken = token;
-
-        return token.promise;
       }
 
       return null;
@@ -167,10 +151,20 @@ export default {
       this.worker.addEventListener('message', this.onMessage);
       this.talkie = new SandboxTalkie(this.worker, { pingFrequency: 100 });
 
-      let lastTime = Date.now();
+      const lastTime = Date.now();
 
       this.talkie.on('this:failed-ping', () => {
-        this.$emit('busy', Date.now() - lastTime);
+        if (this.isBusy === false) {
+          this.isBusy = true;
+          this.$emit('busy', Date.now() - lastTime);
+        }
+      });
+
+      this.talkie.on('this:pong', () => {
+        if (this.isBusy) {
+          this.isBusy = false;
+          this.$emit('free');
+        }
       });
 
       logger.info('Sandbox started');
@@ -179,6 +173,7 @@ export default {
   },
 
   mounted() {
+    this.isBusy = false;
     this.start();
   },
 

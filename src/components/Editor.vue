@@ -111,18 +111,11 @@ export default {
     },
 
     renderInitialCoverage(coverage, execId) {
+      this.coveredByLine = {};
       this.cm.operation(() => {
         this.clearCoverage();
 
-        Object.values(this.markers).forEach(marker => {
-          marker.clear();
-        });
-
         for (let i = 0; i < coverage.length; i++) {
-          if (this.markers.hasOwnProperty(i)) {
-            this.markers[i].clear();
-          }
-
           const insertion = coverage[i];
           const loc = insertion.node.loc;
 
@@ -134,7 +127,6 @@ export default {
               className: 'CoveredBlock is-uncovered',
               title: 'This block has been entered',
             });
-            this.markers[rangeId] = marker;
           } else {
             const element = createCoverageMarker(false);
 
@@ -150,25 +142,14 @@ export default {
       const [start, end] = getSingleCharFromLoc(locStart);
       const rangeId = createRangeId(start, end, execId);
 
-      // console.log(this.markers)
-      // console.log(rangeId)
-      // console.log(this.markers[rangeId])
-
-      if (this.markers.hasOwnProperty(rangeId)) {
-        this.markers[rangeId].clear();
+      if (this.coveredByLine[line]) {
+        return;
       }
 
-      if (insertion.type === 'BlockStatement') {
-        const marker = this.cm.doc.markText(start, end, {
-          className: 'CoveredBlock is-covered',
-          title: 'This block has been entered',
-        });
-        this.markers[rangeId] = marker;
-      } else {
-        const element = createCoverageMarker(true);
+      const element = createCoverageMarker(true);
 
-        this.cm.setGutterMarker(line, GUTTER_KEY, element);
-      }
+      this.cm.setGutterMarker(line, GUTTER_KEY, element);
+      this.coveredByLine[line] = true;
     },
 
     clearPhantoms() {
@@ -381,8 +362,8 @@ export default {
   created() {
     this.maxRecordedViewportLength = 0;
     this.phantomPool = [];
-    this.markers = {};
     this.widgets = [];
+    this.coveredByLine = {};
     this.widgetsByLine = {};
     this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
       trailing: true,

@@ -42,82 +42,92 @@ function loadModule(name) {
 
 const $require = moduleName => loadModule(moduleName);
 
-const CHUNK_TIMEOUT = 150;
-const CHUNK_SIZE = 150;
+const CHUNK_TIMEOUT = 32;
+const CHUNK_SIZE = 5000;
 
-class Receiver extends Talkie {
+let queue = [];
+let timeoutId = null;
 
-  constructor() {
-    super();
-    this.queue = [];
-    this.start();
+const start = () => {
+  if (queue.length) {
+    postMessage(queue.slice(0, CHUNK_SIZE));
+    queue = queue.slice(CHUNK_SIZE);
   }
 
-  start() {
-    const loop = () => {
-      console.log('CHUNKY BOIS');
-      postMessage(this.queue.slice(0, CHUNK_SIZE));
-      this.queue = this.queue.slice(CHUNK_SIZE);
-      this.timeoutId = setTimeout(loop, CHUNK_TIMEOUT);
-    }
+  timeoutId = setTimeout(start, CHUNK_TIMEOUT);
+}
 
-    loop();
-  }
+start();
 
-  stop() {
-    clearTimeout(this.timeoutId);
-  }
+function stop() {
+  clearTimeout(timeoutId);
+}
 
-  get origin() {
-    return { id: ORIGIN };
-  }
+function enqueue(item) {
+  queue.push(item);
+}
 
-  send(message) {
-    // window.parent.postMessage(message, DOMAIN);
-    this.queue.push(message);
-  }
-
-};
-
-const receiver = new Receiver();
-
-receiver.on('lively-javascript:exec', async (payload, reply) => {
+const exec = async (payload, meta) => {
+  const { execId } = meta;
   // eslint-disable-next-line
   const __dirname = payload.__dirname;
   // eslint-disable-next-line
   const __filename = payload.__filename;
   const exports = {};
+
   const module = {
     require: $require,
     exports,
   };
 
+  let part = 0;
+
+  const idsByLine = {};
+
   const result = await run(payload.input, {
     track(id, hasValue, value) {
       // console.log(id, hasValue, value)
 
-      console.time('hey');
+      if (!idsByLine.hasOwnProperty(id)) {
+        idsByLine[id] = 0;
+      }
+
+      // Don't do anything because we only want to show 10 at a time
+      // and returning after 10 improves performance tremendously
+      if (idsByLine[id] === 10) {
+        return;
+      }
+
+      idsByLine[id] += 1;
+
       if (hasValue) {
-        // console.log('isexpression')
-        reply({
-          // filename: __filename,
-          // insertion: { id },
-          // meta: {
-          //   isPromise: typeof value?.then === 'function',
-          // },
-          // expression: {
-          //   value: 'undefined',
-          //   // value: JSUtils.serialize(value),
-          // },
+        enqueue({
+          execId,
+          part,
+          done: false,
+          payload: {
+            insertion: { id },
+            meta: {
+              isPromise: typeof value?.then === 'function',
+            },
+            expression: {
+              // value: 'undefined',
+              value: JSUtils.serialize(value),
+            },
+          }
         });
       } else {
         // console.log('replying ma dude')
-        reply({
-          // filename: __filename,
-          // insertion: { id },
+        enqueue({
+          execId,
+          part,
+          done: false,
+          payload: {
+            insertion: { id },
+          },
         });
       }
-      console.timeEnd('hey');
+      // console.timeEnd('hey');
     },
     env: 'browser',
     sourcemap: payload.sourcemap,
@@ -134,17 +144,16 @@ receiver.on('lively-javascript:exec', async (payload, reply) => {
     // result.error.loc.line -= 1;
   }
 
-  return result;
-});
+  return { payload: result, execId, done: true, part };
+};
 
-self.addEventListener('message', ({ data: message }) => {
+self.addEventListener('message', async ({ data: message }) => {
   if (Messages.isPing(message)) {
     postMessage([Messages.pong()]);
-  }
+  } else if (message.action === 'exec') {
+    logger.info('SandboxIncoming', Date.now(), Messages.isValid(message), message);
 
-  if (Messages.isValid(message)) {
-    logger.info('IframeIncoming', Date.now(), Messages.isValid(message), message);
-    receiver.dispatch([message]);
+    postMessage(await exec(message.payload, message.meta));
   }
 });
 

@@ -18,7 +18,7 @@
             </button>
           </div> -->
           <article class="Article">
-            <div class="Article-header">
+            <div class="Article-header" @click="isShowingBusyMessage = !isShowingBusyMessage">
               <span>Marinara</span>
             </div>
 
@@ -28,35 +28,43 @@
         </div>
       </div>
       <div style="width: 40%;">
-        <transition
-          enter-active-class="animated fadeIn"
-          leave-active-class="animated fadeOut"
-          :duration="300"
-        >
-          <div class="EditorNotification" v-show="isShowingBusyMessage">
-            <p class="EditorNotification-message">
-                The web worker running your code seems to be hanging. If you'd like to terminate the web worker, press terminate below. Otherwise, be careful, and watch your CPU usage!
-            </p>
-            <div class="EditorNotification-actions">
-              <button
-                class="EditorNotification-actionItem"
-                @click="restartSandbox"
-              >
-                Kill Script
-              </button>
-            </div>
-          </div>
-        </transition>
         <div class="EditorPanel">
+          <ul class="EditorNotificationList">
+            <transition
+              enter-active-class="animated fadeIn a-EditorNotificationSlideIn"
+              leave-active-class="animated fadeOut a-EditorNotificationSlideOut"
+              :duration="400"
+            >
+              <li class="EditorNotificationList-item" v-show="isShowingBusyMessage">
+                <div role="alert" class="EditorNotification">
+                  <div class="EditorNotification-body">
+                    <button class="EditorNotification-close">&times;</button>
+                    <p class="EditorNotification-message">
+                        The web worker running your code seems to be hanging. If you'd like to terminate the web worker, press terminate below. Otherwise, be careful, and watch your CPU usage!
+                    </p>
+                    <!-- <div class="EditorNotification-actions">
+                      <button
+                        class="EditorNotification-actionItem"
+                        @click="restartSandbox"
+                      >
+                        Kill Script
+                      </button>
+                    </div> -->
+                  </div>
+                </div>
+              </li>
+            </transition>
+          </ul>
           <div class="EditorToolbar">
-            <button class="EditorToolbar-run" @click="restartSandbox">
-              <span class="ion" :class="{ 'is-running': isRunning, 'ion-play': isRunning, 'ion-pause': !isRunning }"></span>
+            <button class="EditorToolbar-run" :class="{ 'is-busy': isBusy }" @click="toggleScript">
+              <span class="ion" :class="{ 'ion-play': !isBusy, 'ion-stop': isBusy }"></span>
             </button>
           </div>
           <app-editor-sandbox
             ref="editor"
             :code="code"
-            @busy="showBusyMessage"
+            @busy="onSandboxBusy"
+            @free="onSandboxFree"
             @runtime-error="onRuntimeError"
             @transform-error="onTransformError"
             @done="onSandboxDone"
@@ -107,7 +115,7 @@ export default {
 
   data() {
     return {
-      isRunning: true,
+      isBusy: false,
       error: null,
       errorExecId: null,
       isShowingBusyMessage: false,
@@ -153,14 +161,41 @@ export default {
 
   methods: {
 
+    toggleScript() {
+      if (this.isBusy) {
+        this.restartSandbox();
+      } else {
+        this.$refs.editor.runScript();
+      }
+    },
+
     restartSandbox() {
-      console.log(this.$refs.editor.$refs.sandbox)
       this.$refs.editor.$refs.sandbox.restart();
       this.isShowingBusyMessage = false;
+      // FIXME: Might run into problems here because if the sandbox restart is not synchronous
+      this.isBusy = false;
+      this.cancelBusyMessage();
     },
 
     showBusyMessage() {
-      this.isShowingBusyMessage = true;
+      this.showBusyTimeoutId = setTimeout(() => {
+        this.isShowingBusyMessage = true;
+        this.isBusy = true;
+      }, 3000);
+    },
+
+    cancelBusyMessage() {
+      clearTimeout(this.showBusyTimeoutId);
+    },
+
+    onSandboxBusy() {
+      this.showBusyMessage();
+    },
+
+    onSandboxFree() {
+      this.cancelBusyMessage();
+      this.isBusy = false;
+      this.isShowingBusyMessage = false;
     },
 
     onRuntimeError(error) {
@@ -183,6 +218,14 @@ export default {
       clearTimeout(this.showErrorTimeoutId);
     },
 
+    beforeDestroy() {
+      this.cancelBusyMessage();
+    },
+
+    created() {
+      this.showBusyTimeoutId = null;
+    },
+
   },
 
   components: {
@@ -194,8 +237,52 @@ export default {
 };
 </script>
 
+
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+
+// hsla(197, 88%, 58%, 1) // a nice blue
+
+@keyframes a-EditorNotificationSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px) scale(0.7);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0px) scale(1);
+  }
+}
+
+@keyframes a-EditorNotificationSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0px) scale(1);
+  }
+
+  100% {
+    transform: translateX(-50px) scale(0.4s);
+    opacity: 0;
+  }
+}
+
+.a-EditorNotificationSlideIn {
+  animation: a-EditorNotificationSlideIn 350ms forwards;
+}
+
+.a-EditorNotificationSlideOut {
+  animation: a-EditorNotificationSlideOut 350ms forwards;
+}
+
+.EditorNotificationList {
+  bottom: 1rem;
+  left: 0;
+  list-style-type: none;
+  position: absolute;
+  width: 100%;
+  z-index: 99999;
+}
 
 .EditorNotification {
   background-color: #3e3e36;
@@ -205,14 +292,40 @@ export default {
   // background-color: #333333;
   border-radius: 4px;
   box-shadow: 0 2px 4px 0 rgba(black, 0.1), 0 12px 35px -2px rgba(0, 0, 0, 0.26);
+  margin-bottom: 1rem;
+  margin-left: auto;
+  margin-right: auto;
   max-width: 100%;
   padding-top: 1rem;
-  position: absolute;
-  // left: -2rem;
-  // right: 1rem;
+  position: relative;
   top: 1rem;
   width: 400px;
-  z-index: 999;
+
+  &:before {
+    border-bottom: 11px solid transparent;
+    border-left: 8px solid #eae9ea;
+    border-top: 11px solid transparent;
+    content: '';
+    position: absolute;
+    top: 1rem;
+    right: 0;
+    transform: translate(100%, 0);
+  }
+}
+
+.EditorNotification-body {
+  position: relative;
+}
+
+.EditorNotification-close {
+  @include button;
+  display: none;
+  color: #2b292b;
+  font-size: 24px;
+  position: absolute;
+  padding: 6px 8px;
+  right: 0;
+  top: 0;
 }
 
 .EditorNotification-message {
@@ -282,7 +395,7 @@ export default {
   padding: 10px 18px;
   text-shadow: 0 1px 1px rgba(0,0,0,0.2);
 
-  &.is-running {
+  &.is-busy {
     background-color: #e84c3d;
   }
 
@@ -355,7 +468,7 @@ export default {
 .EditorPanel {
   font-family: consolas;
   font-size: 15px;
-  position: relatice;
+  position: relative;
   height: 100vh;
 }
 

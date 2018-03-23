@@ -5,6 +5,7 @@
       url="/sandbox.html"
       :origin="origin"
       @busy="onSandboxBusy"
+      @free="onSandboxFree"
       @reply="onSandboxReply"
       @done="onSandboxDone"
       @runtime-error="onSandboxRuntimeError"
@@ -104,10 +105,11 @@ export default {
       const node = insertion.node;
 
       return (
-          meta.isPromise                              ||
-          this.instrument.isLiteral(node)             ||
-          insertion.context === 'ReturnStatement'     ||
-          insertion.context === 'VariableDeclaration'
+          insertion.type !== 'Identifier'
+          // meta.isPromise                              ||
+          // this.instrument.isLiteral(node)             ||
+          // insertion.context === 'ReturnStatement'     ||
+          // insertion.context === 'VariableDeclaration'
         );
     },
 
@@ -198,6 +200,10 @@ export default {
 
     onSandboxBusy(time) {
       this.$emit('busy', time);
+    },
+
+    onSandboxFree() {
+      this.$emit('free');
     },
 
     onSandboxReply(payload) {
