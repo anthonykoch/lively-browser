@@ -40,7 +40,7 @@
                   <div class="EditorNotification-body">
                     <button class="EditorNotification-close">&times;</button>
                     <p class="EditorNotification-message">
-                        The web worker running your code seems to be hanging. If you'd like to terminate the web worker, press terminate below. Otherwise, be careful, and watch your CPU usage!
+                        The web worker running your code seems to be hanging. To terminate the web worker, press the stop button. Otherwise, be careful and watch your CPU usage!
                     </p>
                     <!-- <div class="EditorNotification-actions">
                       <button
@@ -238,10 +238,17 @@ export default {
 </script>
 
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
 
-// hsla(197, 88%, 58%, 1) // a nice blue
+
+$color-error: hsla(11, 100%, 64%, 1);
+$color-info: hsla(197, 88%, 58%, 1); // a nice blue
+$color-gray: #eae9ea;
+
+$editor-notification-background-default: $color-gray;
+$editor-notification-background-error: $color-error;
+$editor-notification-color-default: rgba(black, 0.6);
+$editor-notification-color-error: rgba(white, 0.97);
 
 @keyframes a-EditorNotificationSlideIn {
   0% {
@@ -276,21 +283,17 @@ export default {
 }
 
 .EditorNotificationList {
-  bottom: 1rem;
-  left: 0;
+  top: 1rem;
+  right: 5rem;
   list-style-type: none;
   position: absolute;
-  width: 100%;
   z-index: 99999;
 }
 
 .EditorNotification {
-  background-color: #3e3e36;
-  background-color: #2b292b;
-  background-color: #eae9ea;
-  // background-color: #383830;
-  // background-color: #333333;
+  background-color: $editor-notification-background-default;
   border-radius: 4px;
+  color: $editor-notification-color-default;
   box-shadow: 0 2px 4px 0 rgba(black, 0.1), 0 12px 35px -2px rgba(0, 0, 0, 0.26);
   margin-bottom: 1rem;
   margin-left: auto;
@@ -298,18 +301,27 @@ export default {
   max-width: 100%;
   padding-top: 1rem;
   position: relative;
-  top: 1rem;
   width: 400px;
 
   &:before {
     border-bottom: 11px solid transparent;
-    border-left: 8px solid #eae9ea;
+    border-left: 8px solid $editor-notification-background-default;
     border-top: 11px solid transparent;
     content: '';
     position: absolute;
-    top: 1rem;
-    right: 0;
+    top: 0.5rem;
+    right: 2px;
     transform: translate(100%, 0);
+  }
+}
+
+.EditorNotification.is-error {
+  background-color: $editor-notification-background-error;
+  color: $editor-notification-color-error;
+  text-shadow: 0 1px 1px rgba(black, 0.1);
+
+  &:before {
+    border-left-color: $editor-notification-background-error;
   }
 }
 
@@ -329,12 +341,12 @@ export default {
 }
 
 .EditorNotification-message {
-  color: rgba(black, 0.6);
+  color: inherit;
   font-size: 12px;
   line-height: 1.8;
   padding-left: 1rem;
   padding-right: 1rem;
-  padding-bottom: 0.5rem;
+  padding-bottom: 1rem;
 }
 
 // - Orange #f29100
@@ -376,32 +388,36 @@ export default {
 
 .EditorToolbar {
   position: fixed;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
   z-index: 9999;
 }
 
 .EditorToolbar-run {
   @include button;
-  // background-color: #f5256f;
   background-color: #d8cc6d;
   border-radius: 3px;
   box-shadow: 0 8px 22px -3px rgba(black, 0.5);
   color: white;
-  // border-left: 1px solid rgba(black, 0.1);
   font-size: 10px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 10px 18px;
+  padding: 18px 21px;
+  position: relative;
   text-shadow: 0 1px 1px rgba(0,0,0,0.2);
 
   &.is-busy {
-    background-color: #e84c3d;
+    background-color: $color-error;
+    // hsla(11, 100%, 64%, 1)
   }
 
   > span {
     filter: drop-shadow(3px 3px 6px rgba(black, 0.2));
     font-size: 15px;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
   }
 }
 

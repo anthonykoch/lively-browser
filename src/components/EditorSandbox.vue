@@ -16,6 +16,7 @@
       :code="code"
       :phantoms="phantoms"
       :coverage="coverage"
+      @delete="console.log('wtf')"
       @change="onEditorChange">
     </app-editor>
   </div>
@@ -253,12 +254,23 @@ export default {
       }
     },
 
+    onLineDeleted() {
+      console.log(arguments)
+      this.$emit('lineDeleted');
+    },
+
+  },
+
+  beforeDestroyed() {
+    this.cm.doc.off('delete', this.onLineDeleted);
+    this.cm.off('keydown', this.onKeydown);
   },
 
   async mounted() {
     const [{ default: transform }, instrument] = await this.imports;
 
     this.cm = this.$refs.editor.cm;
+    this.cm.doc.on('delete', this.onLineDeleted);
     this.cm.on('keydown', this.onKeydown);
     this.instrument = instrument;
     this.transform = transform;
