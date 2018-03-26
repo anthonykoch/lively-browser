@@ -35,6 +35,19 @@ $app-article-padding: 6rem;
 }
 
 
+
+
+
+
+
+$color-error: hsla(11, 100%, 64%, 1);
+$color-info: hsla(197, 88%, 58%, 1); // a nice blue
+$color-gray: #eae9ea;
+
+
+
+
+
 $app-button-font-family: Montserrat;
 
 @mixin button {
