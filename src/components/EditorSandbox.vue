@@ -2,8 +2,8 @@
   <div>
     <app-sandbox
       ref="sandbox"
-      url="/sandbox.html"
       :origin="origin"
+      url="/sandbox.html"
       @busy="onSandboxBusy"
       @free="onSandboxFree"
       @reply="onSandboxReply"
@@ -12,11 +12,10 @@
     ></app-sandbox>
     <app-editor
       ref="editor"
-      style="font-size: 14px"
       :code="code"
       :phantoms="phantoms"
       :coverage="coverage"
-      @delete="console.log('wtf')"
+      style="font-size: 14px"
       @change="onEditorChange">
     </app-editor>
   </div>
@@ -26,14 +25,16 @@
 import debounce from 'lodash/debounce';
 import cuid from 'cuid';
 
-import AppEditor from '@/components/Editor';
-import AppSandbox from '@/components/Sandbox';
-
 import logger from '@/logger';
 
 export default {
 
   name: 'EditorSandbox',
+
+  components: {
+    AppEditor: require('@/components/Editor').default,
+    AppSandbox: require('@/components/Sandbox').default,
+  },
 
   props: {
     code: {
@@ -48,7 +49,9 @@ export default {
 
   data() {
     return {
-      coverage: Object.freeze([]),
+      coverage: {
+        items: Object.freeze([]),
+      },
       phantoms: Object.freeze([]),
       origin: `name:lively-editor;id:${cuid()}`,
       id: cuid(),
@@ -59,12 +62,40 @@ export default {
     };
   },
 
+  async mounted() {
+    const [{ default: transform }, instrument] = await this.imports;
+
+    this.cm = this.$refs.editor.cm;
+    this.cm.doc.on('delete', this.onLineDeleted);
+    this.cm.on('keydown', this.onKeydown);
+    this.instrument = instrument;
+    this.transform = transform;
+
+    if (this.execOnReady) {
+      this.runScript();
+    }
+  },
+
+  created() {
+    this.phantoms = [];
+    this.transform = null;
+    this.imports = Promise.all([
+      import('scuffka-javascript/dist/transform'),
+      import('scuffka-javascript/dist/instrument'),
+    ]);
+  },
+
+  destroyed() {
+    this.cm.off('keydown', this.onKeydown);
+  },
+
   methods: {
 
     renderInitialCoverage(coverage) {
       // console.log(coverage);
-      this.coverage = Object.freeze(coverage);
-      this.$refs.editor.renderInitialCoverage(coverage.items, this.activeExecId);
+
+      this.coverage = { items: Object.freeze(coverage.items.slice(0)) };
+      this.$refs.editor.renderInitialCoverage(coverage, this.activeExecId);
     },
 
     eraseOutdatedPhantoms() {
@@ -103,8 +134,6 @@ export default {
     },
 
     isSkippable(insertion, meta) {
-      const node = insertion.node;
-
       return (
           insertion.type !== 'Identifier'
           // meta.isPromise                              ||
@@ -129,18 +158,20 @@ export default {
 
       // console.log(data.badLoops);
 
-      if (data.badLoops?.length) {
-        return this.$emit('potential-freeze', data.badLoops);
-      }
+      // if (data.badLoops?.length) {
+      //   return this.$emit('potential-freeze', data.badLoops);
+      // }
 
       if (error) {
         this.$emit('transform-error', { ...error, execId: activeExecId });
+
+        const match = error.message.match(/^(.*?):\s*.*?:\s*(.*?)\s*\(/);
 
         if (error.loc) {
           this.addPhantom({
             execId: activeExecId,
             // Todo: Extract the error message from the stack trace
-            content: error.name?.trim(),
+            content: match ? match[2] : 'SyntaxError',
             line: error.loc.line,
             column: error.loc.column,
             className: 'is-error',
@@ -255,7 +286,6 @@ export default {
     },
 
     onLineDeleted() {
-      console.log(arguments)
       this.$emit('lineDeleted');
     },
 
@@ -264,38 +294,6 @@ export default {
   beforeDestroyed() {
     this.cm.doc.off('delete', this.onLineDeleted);
     this.cm.off('keydown', this.onKeydown);
-  },
-
-  async mounted() {
-    const [{ default: transform }, instrument] = await this.imports;
-
-    this.cm = this.$refs.editor.cm;
-    this.cm.doc.on('delete', this.onLineDeleted);
-    this.cm.on('keydown', this.onKeydown);
-    this.instrument = instrument;
-    this.transform = transform;
-
-    if (this.execOnReady) {
-      this.runScript();
-    }
-  },
-
-  created() {
-    this.phantoms = [];
-    this.transform = null;
-    this.imports = Promise.all([
-      import('lively-javascript/dist/transform'),
-      import('lively-javascript/dist/instrument'),
-    ]);
-  },
-
-  destroyed() {
-    this.cm.off('keydown', this.onKeydown);
-  },
-
-  components: {
-    AppSandbox,
-    AppEditor,
   },
 
 };

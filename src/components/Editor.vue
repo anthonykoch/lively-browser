@@ -30,40 +30,56 @@ const createCoverageMarker = (isCovered) => {
   const element = document.createElement('div');
   const state = isCovered ? 'is-covered' : 'is-uncovered';
 
-  element.className = `LivelyCoverageMarker ${state}`;
+  element.className = `CoverageMarker ${state}`;
   element.textContent = '*';
 
   return element;
 };
 
-const GUTTER_KEY = 'LivelyCoverageGutter';
+const GUTTER_KEY = 'CoverageGutter';
 
+// eslint-disable-next-line no-unused-vars
 const getSingleCharFromLoc = (simpleLoc) => {
   return [{
     line: simpleLoc.line - 1,
     ch: simpleLoc.column,
   }, {
     line: simpleLoc.line - 1,
-    ch: simpleLoc.column + 1
+    ch: simpleLoc.column + 1,
   }];
 };
 
+// eslint-disable-next-line no-unused-vars
 const createRangeId =
-  (start, end, execId) => `${execId}>${start.line}:${start.ch},${end.line}:${end.ch}`;;
+  (start, end, execId) =>
+    `${execId}>${start.line}:${start.ch},${end.line}:${end.ch}`;
 
 export default {
 
   name: 'Editor',
 
+  components: {
+    codemirror,
+  },
+
   props: {
     phantoms: {
+      type: Array,
       required: true,
       default: () => Object.freeze([]),
     },
+
     coverage: {
+      type: Object,
       required: true,
-      default: () => Object.freeze([]),
+      default() {
+        return { items: Object.freeze([]) };
+      },
+      validator(value) {
+        return value && Array.isArray(value.items);
+      },
     },
+
     code: {
       type: String,
       required: true,
@@ -75,7 +91,7 @@ export default {
       cmOptions: {
         mode: 'javascript',
 
-        gutters: ['CodeMirror-linenumbers', 'LivelyCoverageGutter'],
+        gutters: ['CodeMirror-linenumbers', 'CoverageGutter'],
 
         autoCloseBrackets: true,
         theme: 'monokai',
@@ -100,8 +116,32 @@ export default {
     };
   },
 
-  components: {
-    codemirror,
+  watch: {
+    phantoms() {
+      this.hasDirtyPhantoms = true;
+      this.updatePhantoms();
+    },
+  },
+
+  mounted() {
+   this.cm = this.getCodeMirror();
+  },
+
+  beforeDestroy() {
+    // this.clearPhantoms();
+    // this.clearCoverage();
+    this.cm = null;
+  },
+
+  created() {
+    this.maxRecordedViewportLength = 0;
+    this.phantomPool = [];
+    this.widgets = [];
+    this.coveredByLine = {};
+    this.widgetsByLine = {};
+    this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
+      trailing: true,
+    });
   },
 
   methods: {
@@ -115,18 +155,18 @@ export default {
       this.cm.operation(() => {
         this.clearCoverage();
 
-        for (let i = 0; i < coverage.length; i++) {
-          const insertion = coverage[i];
+        for (let i = 0; i < coverage.items.length; i += 1) {
+          const insertion = coverage.items[i];
           const loc = insertion.node.loc;
 
           if (insertion.type === 'BlockStatement') {
-            const [start, end] = getSingleCharFromLoc(loc.start);
-            const rangeId = createRangeId(start, end, execId);
+            // const [start, end] = getSingleCharFromLoc(loc.start);
+            // const rangeId = createRangeId(start, end, execId);
 
-            const marker = this.cm.doc.markText(start, end, {
-              className: 'CoveredBlock is-uncovered',
-              title: 'This block has been entered',
-            });
+            // const marker = this.cm.doc.markText(start, end, {
+            //   className: 'CoveredBlock is-uncovered',
+            //   title: 'This block has been entered',
+            // });
           } else {
             const element = createCoverageMarker(false);
 
@@ -138,9 +178,9 @@ export default {
 
     renderCovered(insertion, execId) {
       const locStart = insertion.node.loc.start;
-      const line = locStart.line - 1
-      const [start, end] = getSingleCharFromLoc(locStart);
-      const rangeId = createRangeId(start, end, execId);
+      const line = locStart.line - 1;
+      // const [start, end] = getSingleCharFromLoc(locStart);
+      // const rangeId = createRangeId(start, end, execId);
 
       if (this.coveredByLine[line]) {
         return;
@@ -161,11 +201,11 @@ export default {
     getPhantoms() {
       const phantoms =
         this.phantoms.filter(phantom => (
-            typeof phantom.isExpired === 'function'
-              ? !phantom.isExpired(phantom)
-              : true
-            ),
-          );
+          typeof phantom.isExpired === 'function'
+            ? !phantom.isExpired(phantom)
+            : true
+          ),
+        );
 
       return phantoms;
     },
@@ -222,7 +262,7 @@ export default {
         const line = phantom.line - 1;
         let grouping = null;
 
-        if (!groups.hasOwnProperty(line)) {
+        if (!Object.prototype.hasOwnProperty.call(groups, line)) {
           groups[line] = grouping = [];
         } else {
           grouping = groups[line];
@@ -248,7 +288,7 @@ export default {
 
         Object.entries(this.phantomsByLine)
           .forEach(([l, phantoms]) => {
-            const line = l | 0;
+            const line = Number(l);
 
             const phantomElement = this.getPhantomElement({
               line,
@@ -282,12 +322,10 @@ export default {
       return document.createElement('div');
     },
 
-    updatePhantomElement(el, { column, line, contents, className='' }) {
+    updatePhantomElement(el, { column, line, contents, className='' }) { /* eslint-disable no-param-reassign */
       // Reset the elements attributes in case they aren't reset wherever they are used
       // console.time('updatePhantomElement');
 
-      const indentWidth = this.cm.getIndentWIdth
-      const lineText = this.cm.getLine(line - 1);
       const token = this.cm.getTokenAt({ line, ch: 0 });
       const whitespace =
         Number.isFinite(column)
@@ -297,7 +335,10 @@ export default {
       el.style.whiteSpace = 'pre';
       el.className = `Phantom`;
       el.style.display = 'block';
-      el.innerHTML = `<span class="Phantom-indent">${whitespace}</span><span class="Phantom-messageList"></span>`;
+      el.innerHTML =
+        // DO NOT ADD WHITESPACE in the Phantom-indent element
+        `<span class="Phantom-indent">${whitespace}</span>
+        <span class="Phantom-messageList"></span>`;
 
       const fragment = document.createDocumentFragment();
 
@@ -340,34 +381,6 @@ export default {
       this.updatePhantomsDelayed(true);
     },
 
-  },
-
-  watch: {
-    phantoms(newPhantoms, oldPhantoms) {
-      this.hasDirtyPhantoms = true;
-      this.updatePhantoms();
-    },
-  },
-
-  mounted() {
-   this.cm = this.getCodeMirror();
-  },
-
-  beforeDestroy() {
-    // this.clearPhantoms();
-    // this.clearCoverage();
-    this.cm = null;
-  },
-
-  created() {
-    this.maxRecordedViewportLength = 0;
-    this.phantomPool = [];
-    this.widgets = [];
-    this.coveredByLine = {};
-    this.widgetsByLine = {};
-    this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
-      trailing: true,
-    });
   },
 
 };

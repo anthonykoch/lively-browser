@@ -8,7 +8,10 @@
     }],
     "@babel/preset-stage-2",
   ],
-  "plugins": ["@babel/plugin-transform-runtime", "@babel/plugin-proposal-optional-chaining"],
+  "plugins": [
+    "@babel/plugin-transform-runtime",
+    "@babel/plugin-proposal-optional-chaining",
+  ],
   // "plugins": ["transform-vue-jsx", "transform-runtime"],
   "env": {
     "test": {

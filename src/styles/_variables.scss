@@ -14,6 +14,8 @@ $app-text-line-height: 1.9;
 $app-text-font-size: 15px;
 $app-text-font-weight: 400;
 
+$app-box-shadow-1: 0 2px 4px 0 rgba(black, 0.1), 0 12px 35px -2px rgba(0, 0, 0, 0.26);
+
 // $app-text-font-family: 'EB Garamond', $app-backup-font-family;
 // $app-heading-font-family: Avenir, $app-backup-font-family;
 // $app-text-font-size: 20px;
@@ -44,7 +46,7 @@ $color-error: hsla(11, 100%, 64%, 1);
 $color-info: hsla(197, 88%, 58%, 1); // a nice blue
 $color-gray: #eae9ea;
 
-
+// #5abef9 // blue replacement?
 
 
 

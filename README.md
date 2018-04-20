@@ -11,7 +11,7 @@
 - [x] Figure out why `var user = {};` causes it to not clean up older phantoms.
 - [x] Fix undefined phantom class
 - [x] Fix error where `setTimeout(() => {}, 0)` returns a number and moving the cursor to the same line causes the phantom to be erased.
-
+- Add a gif that illustrates what shit does
 
 ### Minor
 

@@ -1,8 +1,8 @@
 import sourcemap from 'source-map';
 
-import * as JSUtils from 'lively-javascript/dist/utils';
-import { run } from 'lively-javascript/dist/exec';
-import Talkie from 'editorconnect-node/dist/talkie';
+import * as JSUtils from 'scuffka-javascript/dist/utils';
+import { run } from 'scuffka-javascript/dist/exec';
+// import Talkie from 'editorconnect-node/dist/talkie';
 import * as Messages from 'editorconnect-node/dist/messages';
 
 import logger from '@/logger';
@@ -47,6 +47,7 @@ const CHUNK_SIZE = 5000;
 
 let queue = [];
 let timeoutId = null;
+let values = {};
 
 const start = () => {
   if (queue.length) {
@@ -101,6 +102,9 @@ const exec = async (payload, meta) => {
       idsByLine[id] += 1;
 
       if (hasValue) {
+        part += 1;
+        values[id] = value;
+
         enqueue({
           execId,
           part,
@@ -108,16 +112,18 @@ const exec = async (payload, meta) => {
           payload: {
             insertion: { id },
             meta: {
-              isPromise: typeof value?.then === 'function',
+              isPromise: value && typeof value.then === 'function',
             },
-            expression: {
-              // value: 'undefined',
-              value: JSUtils.serialize(value),
-            },
+            // expression: {
+            //   // value: 'undefined',
+            //   value: JSUtils.serialize(value),
+            // },
           }
         });
       } else {
         // console.log('replying ma dude')
+        part += 1;
+
         enqueue({
           execId,
           part,
@@ -144,7 +150,13 @@ const exec = async (payload, meta) => {
     // result.error.loc.line -= 1;
   }
 
-  return { payload: result, execId, done: true, part };
+  part += 1;
+
+  const last = { payload: result, execId, done: true, part };
+
+  enqueue(last);
+
+  return last;
 };
 
 self.addEventListener('message', async ({ data: message }) => {
@@ -153,8 +165,12 @@ self.addEventListener('message', async ({ data: message }) => {
   } else if (message.action === 'exec') {
     logger.info('SandboxIncoming', Date.now(), Messages.isValid(message), message);
 
-    postMessage(await exec(message.payload, message.meta));
+    exec(message.payload, message.meta);
   }
+});
+
+self.addEventListener('error', () => {
+  console.log('apwokdawpd')
 });
 
 postMessage({ sandboxReady: true });

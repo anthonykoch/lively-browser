@@ -1,10 +1,14 @@
 <template>
-  <transition-group name="t-EditorNotificationList-item" tag="ul" class="EditorNotificationList">
+  <transition-group
+    name="t-EditorNotificationList-item"
+    tag="ul"
+    class="EditorNotificationList"
+  >
     <li
-      class="EditorNotificationList-item"
       v-for="notification in items"
       v-if="notification.isShowing"
       :key="notification.id"
+      class="EditorNotificationList-item"
     >
       <app-editor-notification :notification="notification"></app-editor-notification>
     </li>
@@ -13,19 +17,17 @@
 
 <script>
 
-import AppEditorNotification from '@/components/EditorNotification';
-
 export default {
+
+  components: {
+    AppEditorNotification: require('@/components/EditorNotification').default,
+  },
 
   props: {
     items: {
       type: Array,
       required: true,
-    }
-  },
-
-  components: {
-    AppEditorNotification
+    },
   },
 
 };
@@ -53,22 +55,23 @@ export default {
 
 .t-EditorNotificationList-item-enter {
   opacity: 0;
-  transform: translate(0, -100px) scale(0.4);
+  transform: translate(0, -100px) scale(0.7);
 }
 
 .t-EditorNotificationList-item-enter-active {
-  transition: all 600ms cubic-bezier(0.23, 1.2, 0.32, 1);
+  transition: all 450ms cubic-bezier(0.23, 1.25, 0.32, 1);
+  transform-origin: top right;
 }
 
 .t-EditorNotificationList-item-leave-to {
   opacity: 0;
-  transform: translate(-100px, 0) scale(1);
+  transform: translate(-80px, 0) scale(1);
 }
 
 .t-EditorNotificationList-item-leave-active {
   position: absolute;
   right: 0;
-  transition: all 400ms;
+  transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 </style>

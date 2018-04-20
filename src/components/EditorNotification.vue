@@ -1,5 +1,8 @@
 <template>
-  <div role="alert" class="EditorNotification">
+  <div
+    role="alert"
+    class="EditorNotification"
+  >
     <div class="EditorNotification-body">
       <button class="EditorNotification-close">&times;</button>
       <p class="EditorNotification-message">
@@ -35,7 +38,7 @@ $editor-notification-color-error: rgba(white, 0.97);
   background-color: $editor-notification-background-default;
   border-radius: 4px;
   color: $editor-notification-color-default;
-  box-shadow: 0 2px 4px 0 rgba(black, 0.1), 0 12px 35px -2px rgba(0, 0, 0, 0.26);
+  box-shadow: $app-box-shadow-1;
   margin-bottom: 1rem;
   margin-left: auto;
   margin-right: auto;

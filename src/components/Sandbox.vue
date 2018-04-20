@@ -18,12 +18,12 @@ import logger from '@/logger';
 import Worker from 'worker-loader!@/sandbox';
 
 class SandboxTalkie extends Talkie {
-
   constructor(sender, options) {
     super(options);
     this.sender = sender;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   get origin() {
     return { id: cuid() };
   }
@@ -31,7 +31,6 @@ class SandboxTalkie extends Talkie {
   send(message) {
     this.sender.postMessage(message);
   }
-
 }
 
 export default {
@@ -49,16 +48,25 @@ export default {
     };
   },
 
+  mounted() {
+    this.isBusy = false;
+    this.start();
+  },
+
+  destroyed() {
+    this.stop();
+  },
+
   methods: {
 
     onMessage({ data: messages }) {
       // console.log(messages)
-
       if (Messages.isPong(messages[0])) {
         this.talkie.dispatch(messages);
       } else if (Array.isArray(messages)) {
-        messages.forEach(message => {
-          // TODO: Would be really nice if we could batch these emits as well, turn reply into replies
+        messages.forEach((message) => {
+          // TODO: Would be really nice if we could batch these emits as well,
+          //       turn reply into replies
           const execId = message.execId;
 
           if (message.done) {
@@ -73,10 +81,10 @@ export default {
               execId,
             });
           } else {
-
             if (message.part > 4000) {
               this.restart();
-              return this.$emit('force-restart');
+              this.$emit('force-restart');
+              return;
             }
 
             this.$emit('reply', {
@@ -87,7 +95,7 @@ export default {
           }
         });
       } else if (messages.sandboxReady) {
-        this.onWorkerReady()
+        this.onWorkerReady();
       }
     },
 
@@ -113,8 +121,19 @@ export default {
       return null;
     },
 
+    requestValue(insertions) {
+      this.worker.postMessage({
+        action: 'request-value',
+        meta: {},
+        payload: {
+          insertions,
+        },
+      });
+    },
+
     onWorkerReady() {
       this.talkie.startPings();
+      console.timeEnd('start');
     },
 
     async onLoad() {
@@ -147,11 +166,12 @@ export default {
     start() {
       this.stop();
 
+      console.time('start');
       this.worker = new Worker();
       this.worker.addEventListener('message', this.onMessage);
       this.talkie = new SandboxTalkie(this.worker, { pingFrequency: 100 });
 
-      const lastTime = Date.now();
+      let lastTime = Date.now();
 
       this.talkie.on('this:failed-ping', () => {
         if (this.isBusy === false) {
@@ -162,6 +182,7 @@ export default {
 
       this.talkie.on('this:pong', () => {
         if (this.isBusy) {
+          lastTime = 0;
           this.isBusy = false;
           this.$emit('free');
         }
@@ -170,15 +191,6 @@ export default {
       logger.info('Sandbox started');
     },
 
-  },
-
-  mounted() {
-    this.isBusy = false;
-    this.start();
-  },
-
-  destroyed() {
-    this.stop();
   },
 
 };
