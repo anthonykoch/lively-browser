@@ -29,27 +29,22 @@ export default {
 
 <style lang="scss">
 
-$editor-notification-background-default: $color-gray;
-$editor-notification-background-error: $color-error;
-$editor-notification-color-default: rgba(black, 0.6);
-$editor-notification-color-error: rgba(white, 0.97);
-
 .EditorNotification {
-  background-color: $editor-notification-background-default;
-  border-radius: 4px;
-  color: $editor-notification-color-default;
+  background-color: $app-editor-notification-background-default;
+  border-radius: $app-editor-notification-border-radius;
+  color: $app-editor-notification-color-default;
   box-shadow: $app-box-shadow-1;
   margin-bottom: 1rem;
   margin-left: auto;
   margin-right: auto;
   max-width: 100%;
-  padding-top: 1rem;
+  padding-top: $app-editor-notification-padding-y;
   position: relative;
   width: 400px;
 
   &:before {
     border-bottom: 11px solid transparent;
-    border-left: 8px solid $editor-notification-background-default;
+    border-left: 8px solid $app-editor-notification-background-default;
     border-top: 11px solid transparent;
     content: '';
     position: absolute;
@@ -60,12 +55,12 @@ $editor-notification-color-error: rgba(white, 0.97);
 }
 
 .EditorNotification.is-error {
-  background-color: $editor-notification-background-error;
-  color: $editor-notification-color-error;
+  background-color: $app-editor-notification-background-error;
+  color: $app-editor-notification-color-error;
   text-shadow: 0 1px 1px rgba(black, 0.1);
 
   &:before {
-    border-left-color: $editor-notification-background-error;
+    border-left-color: $app-editor-notification-background-error;
   }
 }
 
@@ -88,9 +83,9 @@ $editor-notification-color-error: rgba(white, 0.97);
   color: inherit;
   font-size: 12px;
   line-height: 1.8;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  padding-bottom: 1rem;
+  padding-left: $app-editor-notification-padding-x;
+  padding-right: $app-editor-notification-padding-x;
+  padding-bottom: $app-editor-notification-padding-y;
 }
 
 // - Orange #f29100

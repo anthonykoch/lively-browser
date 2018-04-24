@@ -22,7 +22,7 @@ fetch('https://jsonplaceholder.typicode.com/users')
 meme = 123;
 
 console.time('wf');
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 10000; i++) {
   if (meme) {
     i;
   }

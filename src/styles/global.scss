@@ -1,7 +1,18 @@
+// Hello, this is the Scss entry point for the entire app's css.
+//
+// Things to know:
+// ß
+// 1. They are namespaced with `app-` so that they don't collide with any
+//    third party variables.
+// 2. All z-indexes except for ones declared as 1 or -1 are set in here;
+// 3. SUIT is used for class naming cause I like the way it looks more
+//    than BEM and it basically produces the same result.
+
 @import 'variables';
 
 @import '~normalize.css';
 @import '~animate.css';
+@import 'tooltip';
 
 *,
 *:after,
@@ -188,6 +199,14 @@ pre {
 
 
 
+.WalkthoughtStep {
+  // TODO: Figure out if it's possible to use a border that doesn't get split up
+  background-color: rgba(#d8cc6d, 0.2);
+  // outline: 1px solid #d8cc6d;
+}
+
+
+
 
 
 /**
@@ -206,8 +225,13 @@ pre {
   // overflow: auto;
   position: relative;
   top: 0;
-  white-space: pre;
+  // white-space: pre;
   z-index: 1;
+}
+
+.Phantom-indent {
+  white-space: pre;
+  margin-left: 12px;
 }
 
 .Phantom-message {
@@ -256,7 +280,6 @@ $marker-coverage-error: #e54545; // red
   width: 20px;
 }
 
-
 .CoverageMarker {
   color: transparent;
   position: relative;
@@ -271,7 +294,7 @@ $marker-coverage-error: #e54545; // red
     transform: translate(-50%, -50%);
     width: 8px;
     height: 8px;
-    z-index: 999999999;
+    z-index: $app-coverage-marker-layer;
   }
 
 }
@@ -287,4 +310,5 @@ $marker-coverage-error: #e54545; // red
     background-color: $marker-coverage-uncovered;
   }
 }
+
 

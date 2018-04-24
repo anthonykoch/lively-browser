@@ -41,7 +41,7 @@ export default {
   right: 5rem;
   list-style-type: none;
   position: absolute;
-  z-index: 99999;
+  z-index: $app-editor-notification-layer;
 }
 
 .EditorNotificationList-item {

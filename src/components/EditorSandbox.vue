@@ -6,7 +6,7 @@
       url="/sandbox.html"
       @busy="onSandboxBusy"
       @free="onSandboxFree"
-      @reply="onSandboxReply"
+      @replies="onSandboxReply"
       @done="onSandboxDone"
       @runtime-error="onSandboxRuntimeError"
     ></app-sandbox>
@@ -14,7 +14,7 @@
       ref="editor"
       :code="code"
       :phantoms="phantoms"
-      :coverage="coverage"
+      :insertions="insertions"
       style="font-size: 14px"
       @change="onEditorChange">
     </app-editor>
@@ -22,13 +22,32 @@
 </template>
 
 <script>
-import debounce from 'lodash/debounce';
+import _ from 'lodash';
 import cuid from 'cuid';
 
 import logger from '@/logger';
 
-export default {
+// type CoveredInsertionPoint = {
+//  ids: number[], // Unsigned int array technically, not sure how to annotate that
+//  points: { [key: number]: string },
+//  start: number,
+//  end: number,
+//  chunkSize: number,
+// };
 
+// type Phantom = {
+//   content: string[],
+//   line: number,
+//   column: number,
+//   execId: number,
+//   editorId: number,
+//   className: string,
+// };
+
+/**
+ * EditorSandbox acts as an orchestrator for the editor and sandbox.
+ */
+export default {
   name: 'EditorSandbox',
 
   components: {
@@ -41,6 +60,7 @@ export default {
       required: true,
       type: String,
     },
+
     execOnReady: {
       type: Boolean,
       default: true,
@@ -49,9 +69,10 @@ export default {
 
   data() {
     return {
-      coverage: {
+      insertions: {
         items: Object.freeze([]),
       },
+      activeWalkthroughStep: -1,
       phantoms: Object.freeze([]),
       origin: `name:lively-editor;id:${cuid()}`,
       id: cuid(),
@@ -60,6 +81,12 @@ export default {
       dirname: '/',
       logger,
     };
+  },
+
+  computed: {
+    isWalkthroughEnabled() {
+      return this.$store.getters.getUserSettingOrDefault('execution.walkthrough')[0];
+    },
   },
 
   async mounted() {
@@ -77,6 +104,14 @@ export default {
   },
 
   created() {
+    this.coverage = Object.freeze({
+      start: 0,
+      end: 0,
+      chunkSize: 0,
+      ids: [],
+      points: {},
+    });
+
     this.phantoms = [];
     this.transform = null;
     this.imports = Promise.all([
@@ -90,12 +125,78 @@ export default {
   },
 
   methods: {
+    stepPreviousInWalkthrough() {
+      const step = Math.max(0, this.activeWalkthroughStep - 1);
 
-    renderInitialCoverage(coverage) {
+      this.activeWalkthroughStep = step;
+      // console.log({step});
+      this.showWalkthroughStep(step);
+    },
+
+    stepNextInWalkthrough() {
+      const items = this.insertions.items;
+
+      if (items.length > 0) {
+        const step = Math.min(items.length - 1, this.activeWalkthroughStep + 1);
+
+        this.activeWalkthroughStep = step;
+        this.showWalkthroughStep(step);
+        // console.log({step});
+      }
+
+    },
+
+    showWalkthroughStep(walkthroughStepIndex) {
+      // console.log(this.isShowingWalkthrough, walkthroughStepIndex);
+
+      if (Number.isFinite(walkthroughStepIndex) && this.insertions.items.hasOwnProperty(walkthroughStepIndex)) {
+        const insertionId = this.coverage.ids[walkthroughStepIndex];
+        const insertion =
+          this.insertions.items.find(({ id }) => insertionId === id);
+
+        console.log(this.coverage.ids)
+        if (insertion) {
+          // console.log({walkthroughStepIndex, insertionId},  this.insertions.items[insertionId])
+
+          // console.log(insertion.loc)
+
+          const toCodemirrorLoc = (loc) => ([
+            {
+              line: loc.start.line - 1,
+              ch: loc.start.column,
+            },
+            {
+              line: loc.end.line - 1,
+              ch: loc.end.column,
+            },
+          ]);
+
+          if (this.walkthroughMarker) {
+            this.walkthroughMarker.clear();
+          }
+
+          const walkthroughHighlightClass = 'WalkthoughtStep';
+          const loc = toCodemirrorLoc(insertion.node.loc);
+
+          this.walkthroughMarker = this.cm.doc.markText(loc[0], loc[1], {
+            className: walkthroughHighlightClass,
+            title: 'a title ma dewdy',
+          });
+        } else {
+          console.log('lol nope')
+        }
+
+      }
+    },
+
+    renderInitialCoverage(insertions) {
       // console.log(coverage);
 
-      this.coverage = { items: Object.freeze(coverage.items.slice(0)) };
-      this.$refs.editor.renderInitialCoverage(coverage, this.activeExecId);
+      this.insertions = Object.freeze({
+        items: Object.freeze(insertions.items.slice(0)),
+      });
+
+      this.$refs.editor.renderInitialCoverage(insertions, this.activeExecId);
     },
 
     eraseOutdatedPhantoms() {
@@ -105,18 +206,28 @@ export default {
           );
     },
 
-    addPhantom(phantom) {
+    addPhantoms(phantoms) {
       const newPhantoms = this.phantoms
         .filter(p => {
-          return (
-              (p.execId < phantom.execId && p.line > phantom.line) ||
-              (p.execId === phantom.execId)
-            );
+          const gtfo =
+            phantoms.some(phantom =>
+                (p.execId < phantom.execId && p.line > phantom.line) ||
+                (p.execId === phantom.execId)
+              );
+
+          return gtfo;
         })
-        .concat([{
-          ...phantom,
-          editorId: this.id,
-        }]);
+        .concat(phantoms.map(phantom => {
+          return {
+            insertion: phantom.insertion,
+            execId: phantom.execId,
+            content: phantom.content,
+            line: phantom.line,
+            column: phantom.column,
+            className: phantom.className,
+            editorId: this.id,
+          };
+        }));
 
       this.phantoms = Object.freeze(newPhantoms);
     },
@@ -129,14 +240,9 @@ export default {
       return this.activeExecId += 1;
     },
 
-    getInsertion(id) {
-      return this.coverage.items[id];
-    },
-
     isSkippable(insertion, meta) {
       return (
           insertion.type !== 'Identifier'
-          // meta.isPromise                              ||
           // this.instrument.isLiteral(node)             ||
           // insertion.context === 'ReturnStatement'     ||
           // insertion.context === 'VariableDeclaration'
@@ -151,7 +257,14 @@ export default {
       const activeExecId = this.increaseActiveExecId();
       const { filename, dirname } = this;
 
-      const data = await this.transform(this.$refs.editor.getValue(), { filename });
+      const [isWalkthroughEnabled] =
+        this.$store.getters.getUserSettingOrDefault('execution.walkthrough');
+
+      const data = await this.transform(this.$refs.editor.getValue(), {
+        filename,
+        instrumentor: isWalkthroughEnabled ? 'thorough' : 'minimal',
+      });
+
       const error = data.error;
 
       console.log(data.code);
@@ -168,15 +281,15 @@ export default {
         const match = error.message.match(/^(.*?):\s*.*?:\s*(.*?)\s*\(/);
 
         if (error.loc) {
-          this.addPhantom({
+          this.addPhantoms([{
             execId: activeExecId,
             // Todo: Extract the error message from the stack trace
-            content: match ? match[2] : 'SyntaxError',
+            content: [match ? match[2] : 'SyntaxError'],
             line: error.loc.line,
             column: error.loc.column,
             className: 'is-error',
             // layout: 'inline',
-          });
+          }]);
         }
 
         return;
@@ -196,26 +309,50 @@ export default {
       });
     },
 
-    onEditorChange: debounce(function onEditorChange() {
+    setCoverage(coverage, execId) {
+      this.coverage = coverage;
+      console.log(coverage);
+
+      // for (let id = coverage.start; id < coverage.end; id += 1) {
+        // console.log('LOL', id, coverage.hasOwnProperty(id));
+      Object.keys(coverage.points)
+        .map(key => +key)
+        .forEach((id) => {
+          const insertion = this.insertions.items[id];;
+
+          if (!this.isSkippable(insertion)) {
+            const loc = insertion.node.loc;
+
+            this.addPhantoms([{
+              insertion,
+              execId,
+              content: coverage.points[id],
+              line: loc.end.line,
+            }]);
+          }
+        });
+    },
+
+    onEditorChange: _.debounce(function onEditorChange() {
       // this.runScript();
     }, 200, {
       trailing: true,
     }),
 
     onSandboxRuntimeError(payload) {
-      const { execId, error } = payload;
+      const { execId, result: { error } } = payload;
       const loc = error.loc;
       const hasLocation = loc && Number.isFinite(loc.line) && Number.isFinite(loc.column);
 
       if (execId >= this.activeExecId) {
         if (hasLocation) {
-          this.addPhantom({
+          this.addPhantoms([{
             execId,
-            content: error.message,
+            content: [error.message],
             line: loc.line,
             column: loc.column,
             className: 'is-error',
-          });
+          }]);
         }
 
         const message = error.message.trim();
@@ -238,39 +375,29 @@ export default {
       this.$emit('free');
     },
 
-    onSandboxReply(payload) {
-      // Don't render any phantoms for things still going on in previous scripts
-      const execId = payload.execId;
+    onSandboxReply(replies) {
+      console.log('Received', replies);
 
-      // console.log('Reply:', payload.execId, this.activeExecId)
+      replies.forEach((payload) => {
+        const execId = payload.execId;
 
-      if (execId >= this.activeExecId) {
+        // console.log('Reply:', payload.execId, this.activeExecId)
 
-        // Avoid rendering phantoms for things that are redundant, link strings, numbers
-        if (payload.expression) {
-          const meta = payload.meta;
-          const insertion = this.getInsertion(payload.insertion.id);
+        // Don't render any phantoms for replies incoming from previously executed scripts
+        if (execId >= this.activeExecId) {
 
-          if (!this.isSkippable(insertion, meta)) {
-            const loc = insertion.node.loc;
+          // Avoid rendering phantoms for things that are redundant, link strings, numbers
+          if (payload.coverage) {
+            this.setCoverage(payload.coverage, execId);
+          }
 
-            this.addPhantom({
-              insertion,
-              execId,
-              content: payload.expression.value,
-              line: loc.end.line,
-            });
+          if (payload.hasOwnProperty('insertionId')) {
+            const item = this.insertions.items[payload.insertionId];
+
+            this.$refs.editor.renderCovered(item, execId);
           }
         }
-
-        this.$emit('reply', payload);
-      }
-
-      if (payload.insertion) {
-        const item = this.coverage.items[payload.insertion.id];
-
-        this.$refs.editor.renderCovered(item, execId);
-      }
+      });
     },
 
     onSandboxDone(payload) {
@@ -295,7 +422,6 @@ export default {
     this.cm.doc.off('delete', this.onLineDeleted);
     this.cm.off('keydown', this.onKeydown);
   },
-
 };
 </script>
 

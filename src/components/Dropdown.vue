@@ -36,11 +36,6 @@ export default {
 
 <style lang="scss">
 
-$app-dropdown-padding-y: 16px;
-$app-dropdown-padding-x: 22px;
-$app-dropdown-width: 220px;
-$app-dropdown-border-radius: 3px;
-
 .Dropdown {
   position: relative;
 }

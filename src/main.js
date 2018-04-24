@@ -4,6 +4,7 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue';
 import Vuex from 'vuex';
+import { VTooltip, VPopover, VClosePopover } from 'v-tooltip';
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/monokai.css';
@@ -15,6 +16,10 @@ import router from './router';
 import storeDefinitions from './store';
 
 Vue.use(Vuex);
+
+Vue.directive('tooltip', VTooltip);
+Vue.directive('close-popover', VClosePopover);
+Vue.component('v-popover', VPopover);
 
 Vue.config.productionTip = false;
 

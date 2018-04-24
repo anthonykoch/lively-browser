@@ -14,7 +14,7 @@
 <script>
 import CodeMirror from 'codemirror';
 import { codemirror } from 'vue-codemirror';
-import debounce from 'lodash/debounce';
+import _ from 'lodash';
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/keymap/sublime';
@@ -69,7 +69,7 @@ export default {
       default: () => Object.freeze([]),
     },
 
-    coverage: {
+    insertions: {
       type: Object,
       required: true,
       default() {
@@ -139,39 +139,27 @@ export default {
     this.widgets = [];
     this.coveredByLine = {};
     this.widgetsByLine = {};
-    this.updatePhantomsDelayed = debounce(this.updatePhantoms, 200, {
+    this.updatePhantomsDelayed = _.debounce(this.updatePhantoms, 200, {
       trailing: true,
     });
   },
 
   methods: {
-
     clearCoverage() {
       return this.cm.clearGutter(GUTTER_KEY);
     },
 
-    renderInitialCoverage(coverage, execId) {
+    renderInitialCoverage(insertions, execId) {
       this.coveredByLine = {};
       this.cm.operation(() => {
         this.clearCoverage();
 
-        for (let i = 0; i < coverage.items.length; i += 1) {
-          const insertion = coverage.items[i];
+        for (let i = 0; i < insertions.items.length; i += 1) {
+          const insertion = insertions.items[i];
           const loc = insertion.node.loc;
+          const element = createCoverageMarker(false);
 
-          if (insertion.type === 'BlockStatement') {
-            // const [start, end] = getSingleCharFromLoc(loc.start);
-            // const rangeId = createRangeId(start, end, execId);
-
-            // const marker = this.cm.doc.markText(start, end, {
-            //   className: 'CoveredBlock is-uncovered',
-            //   title: 'This block has been entered',
-            // });
-          } else {
-            const element = createCoverageMarker(false);
-
-            this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
-          }
+          this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
         }
       });
     },
@@ -292,7 +280,7 @@ export default {
 
             const phantomElement = this.getPhantomElement({
               line,
-              contents: phantoms.slice(0, 10),
+              contents: phantoms,
             });
 
             const widget =
@@ -322,7 +310,7 @@ export default {
       return document.createElement('div');
     },
 
-    updatePhantomElement(el, { column, line, contents, className='' }) { /* eslint-disable no-param-reassign */
+    updatePhantomElement(el, { column, line, contents: phantoms, maxPerLine=10 }) { /* eslint-disable no-param-reassign */
       // Reset the elements attributes in case they aren't reset wherever they are used
       // console.time('updatePhantomElement');
 
@@ -332,7 +320,6 @@ export default {
           ? ' '.repeat(column)
           : ' '.repeat(token.state.indented);
 
-      el.style.whiteSpace = 'pre';
       el.className = `Phantom`;
       el.style.display = 'block';
       el.innerHTML =
@@ -342,18 +329,29 @@ export default {
 
       const fragment = document.createDocumentFragment();
 
-      contents.forEach((phantom, i) => {
+      let hey = 0;
+
+      for (let i = 0; i < phantoms.length; i += 1) {
+        if (hey > 9) {
+          break;
+        }
+
+        const phantom = phantoms[i];
+
         const div = document.createElement('span');
         const { content, className='' } = phantom;
         const comma =
-          contents.length > 1 && i != contents.length - 1
+          phantoms.length > 1 && i != phantoms.length - 1
             ? ', '
             : '';
 
-        div.textContent = String(content) + comma;
+        div.textContent = content.join(', ') + comma;
+        // TODO: Enforce a max line length/max item length
+        div.textContent = content.slice(0, 10).join(', ') + comma;
         div.className = `Phantom-messageListItem ${className}`;
         fragment.appendChild(div);
-      });
+        // hey += Math.min(phantoms.length, 10);
+      }
 
       let messageList = el.querySelector('.Phantom-messageList');
 
@@ -380,9 +378,7 @@ export default {
     onViewportChange() {
       this.updatePhantomsDelayed(true);
     },
-
   },
-
 };
 </script>
 

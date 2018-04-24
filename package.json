@@ -24,16 +24,20 @@
     "codemirror": "5.33.0",
     "cuid": "2.1.0",
     "editorconnect-node": "https://github.com/anthonykoch/editorconnect-node/tarball/master#1.0.1",
+    "jsonschema": "^1.2.4",
     "lodash": "4.17.4",
     "node-sass": "4.7.2",
     "normalize.css": "7.0.0",
     "scuffka-javascript": "https://github.com/anthonykoch/scuffka-javascript/tarball/master#1.0.7",
+    "source-map": "^0.7.2",
+    "v-tooltip": "^2.0.0-rc.31",
     "vue": "2.5.2",
     "vue-codemirror": "4.0.2",
     "vue-focus-lock": "^1.0.5",
     "vue-markdown": "2.2.4",
     "vue-router": "3.0.1",
-    "vuex": "3.0.1"
+    "vuex": "3.0.1",
+    "vuex-persistedstate": "^2.5.2"
   },
   "devDependencies": {
     "@babel/core": "7.0.0-beta.44",

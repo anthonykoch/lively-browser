@@ -113,7 +113,7 @@ export default {
   backface-visibility: hidden;
   // background-color: $color-gray;
   border-radius: 4px;
-  box-shadow: $app-box-shadow-1;
+  box-shadow: $app-model-content-box-shadow;
   left: 50%;
   // padding: 1rem 2rem;
   max-width: 100%;
@@ -121,19 +121,21 @@ export default {
   transform: translate(-50%, -50%);
   top: 30%;
   // min-width: 280px;
-  width: 600px;
+  width: $app-model-content-width;
 }
 
 .Modal-close {
   background-color: transparent;
   border: 0;
+  cursor: pointer;
   font-size: 22px;
   line-height: 0.6em;
   // outline: 2px solid red;
   outline: 0;
+  padding: 8px;
   position: absolute;
-  right: 1rem;
-  top: 1rem;
+  right: 10px;
+  top: 8px;
 }
 
 </style>

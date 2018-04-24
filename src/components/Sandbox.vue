@@ -17,6 +17,8 @@ import cuid from 'cuid';
 import logger from '@/logger';
 import Worker from 'worker-loader!@/sandbox';
 
+const ORIGIN = cuid();
+
 class SandboxTalkie extends Talkie {
   constructor(sender, options) {
     super(options);
@@ -25,7 +27,7 @@ class SandboxTalkie extends Talkie {
 
   // eslint-disable-next-line class-methods-use-this
   get origin() {
-    return { id: cuid() };
+    return { id: ORIGIN };
   }
 
   send(message) {
@@ -34,7 +36,6 @@ class SandboxTalkie extends Talkie {
 }
 
 export default {
-
   name: 'Sandbox',
 
   props: {
@@ -58,44 +59,64 @@ export default {
   },
 
   methods: {
-
     onMessage({ data: messages }) {
-      // console.log(messages)
-      if (Messages.isPong(messages[0])) {
-        this.talkie.dispatch(messages);
-      } else if (Array.isArray(messages)) {
-        messages.forEach((message) => {
-          // TODO: Would be really nice if we could batch these emits as well,
-          //       turn reply into replies
-          const execId = message.execId;
 
-          if (message.done) {
+      if (messages.sandboxReady) {
+        this.onWorkerReady();
+      } else {
+        this.talkie.dispatch(messages);
+
+        const chunkedMessages =
+          messages.reduce((chunks, message) => {
+            const last = chunks[chunks.length - 1];
+
+            // This if statement is here to filter out pongs from being console logged
+            if (message.type === 'pong') {
+              return chunks;
+            }
+
+            if (message.type === 'reply') {
+              if (message.done && message.to.event === 'exec') {
+                chunks.push([message], []);
+              } else {
+                last.push(message);
+              }
+            }
+
+            return chunks;
+          }, [[]]);
+
+
+        for (const chunk of chunkedMessages) {
+          if (chunk.length === 0) {
+            continue;
+          }
+
+          const firstMessage = chunk[0];
+
+          if (firstMessage.done) {
             let event = 'done';
 
-            if (message.payload.error) {
+            if (firstMessage.payload?.result.error != null) {
               event = 'runtime-error';
             }
 
-            this.$emit(event, {
-              ...message.payload,
-              execId,
-            });
+            // console.log('done')
+            this.$emit(event, firstMessage.payload);
           } else {
-            if (message.part > 4000) {
-              this.restart();
-              this.$emit('force-restart');
-              return;
-            }
+            // if (message.part > 8000) {
+            //   // Once we reach this, we're just gonna stop because that's going to be very
+            //   // cpu and memory intensive
+            //   this.restart();
+            //   this.$emit('force-restart');
+            //   break;
+            // }
 
-            this.$emit('reply', {
-              ...message.payload,
-              execId,
-            });
-            this.$emit('reply', message.payload);
+            // console.log('Replies:', chunk.length);
+            this.$emit('replies', chunk.map(({ payload }) => payload));
           }
-        });
-      } else if (messages.sandboxReady) {
-        this.onWorkerReady();
+        }
+
       }
     },
 
@@ -110,24 +131,16 @@ export default {
         sourcemap,
       };
 
-      if (this.talkie) {
-        this.worker.postMessage({
-          action: 'exec',
-          meta: { execId },
-          payload: outgoingPayload,
-        });
+      if (this.talkie != null) {
+        this.talkie.call('exec', outgoingPayload);
       }
 
       return null;
     },
 
     requestValue(insertions) {
-      this.worker.postMessage({
-        action: 'request-value',
-        meta: {},
-        payload: {
-          insertions,
-        },
+      return this.talkie.call('request-value', {
+        insertions,
       });
     },
 

@@ -4,16 +4,17 @@
     <!-- :duration="200"
       enter-active-class="overlay-fadeIn"
       leave-active-class="overlay-fadeOut" -->
+
     <transition
     >
       <app-overlay
-        v-show="isSettingsModalShowing"
+        v-show="modals.settings.isShowing"
         :allow-close="true"
-        @request-close="isSettingsModalShowing = false"
+        @request-close="modals.settings.isShowing = false"
       >
         <app-modal
           id="settings"
-          @close="isSettingsModalShowing = !isSettingsModalShowing"
+          @close="modals.settings.isShowing = !modals.settings.isShowing"
         >
           <div class="Settings">
             <header class="Settings-header">
@@ -27,15 +28,15 @@
                     for="editors_settings_mode"
                     class="Settings-label"
                   >
-                    Mode:
+                    <span>Execution Mode: </span>
                   </label>
                   <select
                     id="editors-settings-mode"
-                    v-model="editorSettingsMode"
+                    v-model="userSettings['execution.mode']"
                     name="editors_settings_mode"
                     class="Settings-select"
                   >
-                    <option value="manual">Manual (via keybinding)</option>
+                    <option value="manual">Manual (via ctrl+enter)</option>
                     <option
                       value="automatic"
                       disabled
@@ -43,22 +44,37 @@
                       Automatic (as you type)
                     </option>
                   </select>
+                  <p class="Settings-description">
+                    Manual mode only executes code with ctrl+enter. Automatic (currently unavailable) will execute code ever n ms after typing.
+                  </p>
+                 <!--  <span class="HelpTip" v-tooltip.top-center="tooltips.helpSettingsExecutionMode">
+                   <span class="HelpTip-icon ion ion-help"></span>
+                 </span> -->
                 </div>
                 <div class="Settings-group">
                   <label
                     for="execution"
                     class="Settings-label"
                   >
-                    Execution:
+                    Walkthrough:
                   </label>
-                  <select
+                  <input
+                    type="checkbox"
+                    v-model="userSettings['execution.walkthrough']"
+                    id="execution"
+                    name="execution"
+                  >
+                  <span class="Settings-subtitle">(Slower when checked)</span>
+                  <!-- <select
                     id="execution"
                     name="execution"
                     class="Settings-select"
+                    v-model="userSettings['execution.walkthrough']"
+                    @change="updateSettings('execution.mode', '')"
                   >
                     <option value="minimal">Normal (faster)</option>
                     <option value="thorough">Walkthrough (slower)</option>
-                  </select>
+                  </select> -->
                   <p class="Settings-description">
                     Normal execution will execute the code, give coverage feedback, and will render values for identifier expressions. Walkthrough will do all of that, but also allows a walkthrough of how the expressions resolved.
                   </p>
@@ -66,12 +82,18 @@
               </div>
             </div>
             <div class="Settings-actionList">
-              <button class="Settings-save">Save</button>
+              <button
+                class="Settings-save"
+                @click="onSettingSaveClick"
+              >
+                Save
+              </button>
             </div>
           </div>
         </app-modal>
       </app-overlay>
     </transition>
+
     <div
       v-if="section"
       style="display: flex;"
@@ -100,7 +122,7 @@
           <div class="EditorToolbar">
             <button
               :class="{ 'is-busy': isBusy }"
-              class="EditorToolbar-button EditorToolbar-button--run"
+              class="EditorToolbar-button is-run"
               @click="toggleScript"
             >
               <span
@@ -109,15 +131,44 @@
               ></span>
             </button>
             <button
-              class="EditorToolbar-button EditorToolbar-button--settings"
-              @click="isSettingsModalShowing = true"
+              class="EditorToolbar-button is-settings"
+              @click="modals.settings.isShowing = true"
             >
               <span class="ion ion-gear-a"></span>
             </button>
+            <transition
+              :duration="300"
+              name="lol2"
+              enter-class="animated fadeIn"
+              leave-class="animated fadeOut"
+            >
+              <button
+                v-show="isWalkthroughEnabled"
+                class="EditorToolbar-button is-walkthrough is-walkthrough-previous"
+                @click="stepPreviousInWalkthrough()"
+              >
+                <span class="ion ion-chevron-left"></span>
+              </button>
+            </transition>
+            <transition
+              :duration="300"
+              name="lol"
+              enter-active-class="animated fadeIn"
+              leave-active-class="animated fadeOut"
+            >
+              <button
+                v-show="isWalkthroughEnabled"
+                class="EditorToolbar-button is-walkthrough is-walkthrough-next"
+                @click="stepNextInWalkthrough()"
+              >
+                <span class="ion ion-chevron-right"></span>
+              </button>
+            </transition>
           </div>
           <app-editor-sandbox
             ref="editor"
             :code="code"
+            :active-walkthrough-step="activeWalkthroughStep"
             style="font-size: 15px; font-family: consolas"
             @busy="onSandboxBusy"
             @free="onSandboxFree"
@@ -126,7 +177,6 @@
             @done="onSandboxDone"
           >
           </app-editor-sandbox>
-
           <transition
             :duration="400"
             enter-active-class="animated fadeIn bounceIn"
@@ -154,7 +204,6 @@ import {
 } from '@/store/constants';
 
 export default {
-
   name: 'Tutorial',
 
   components: {
@@ -166,11 +215,31 @@ export default {
 
   data() {
     return {
-      isSettingsModalShowing: false,
+      tooltips: {
+        helpSettingsExecutionMode: {
+          content: 'Manual mode only executes code with ctrl+enter. Automatic will execute code ever n ms after typing',
+          classes: ['is-medium-size'],
+          autoHide: false,
+          // open: true,
+          offset: 10,
+          // show: true,
+        },
+      },
+      modals: {
+        settings: {
+          isShowing: false,
+        },
+      },
+
+      activeWalkthroughStep: 0,
       isBusy: false,
       error: null,
       errorExecId: null,
-      editorSettingsMode: 'manual',
+      userSettings: {
+        'execution.mode': 'manual',
+        'execution.walkthrough': false,
+      },
+
       notificationsById: {
         webWorkerBusy: {
           title: '',
@@ -179,28 +248,39 @@ export default {
           actions: [],
         },
 
-        loljk: {
-          title: '',
-          isShowing: false,
-          message: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Amet adipisci accusantium incidunt obcaecati cum repellendus, distinctio, illo, voluptas qui unde dicta. Tempore ipsa hic omnis quibusdam labore magnam dignissimos sit!',
-          actions: [],
-        },
+        // loljk: {
+        //   title: '',
+        //   isShowing: false,
+        //   message: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Amet adipisci accusantium incidunt obcaecati cum repellendus, distinctio, illo, voluptas qui unde dicta. Tempore ipsa hic omnis quibusdam labore magnam dignissimos sit!',
+        //   actions: [],
+        // },
       },
+
       console,
     };
   },
 
   computed: {
-
     ...mapState({
       code: state => state.editor.code,
       article: state => state.articles.article,
       articlesMeta: state => state.articles.articlesMeta,
+      settings: state => state.settings,
     }),
 
     ...mapGetters({
       section: 'activeArticleSection',
     }),
+
+    ...mapGetters([
+      'hasUserSetting',
+      'getUserSettingOrDefault',
+      'getUserSetting',
+    ]),
+
+    isWalkthroughEnabled() {
+      return this.$store.getters.getUserSettingOrDefault('execution.walkthrough')[0];
+    },
 
     notifications() {
       return Object.entries(this.notificationsById)
@@ -224,7 +304,6 @@ export default {
     errorMessage() {
       return this.error ? this.error.message : '';
     },
-
   },
 
   created() {
@@ -244,6 +323,17 @@ export default {
   },
 
   methods: {
+    saveSettings() {
+      this.$store.dispatch('saveSettings', this.userSettings);
+    },
+
+    stepPreviousInWalkthrough() {
+      this.$refs.editor.stepPreviousInWalkthrough();
+    },
+
+    stepNextInWalkthrough() {
+      this.$refs.editor.stepNextInWalkthrough();
+    },
 
     toggleNotification(name) {
       this.notificationsById[name].isShowing = !this.notificationsById[name].isShowing;
@@ -306,12 +396,42 @@ export default {
       clearTimeout(this.showErrorTimeoutId);
     },
 
+    closeModal(name) {
+      this.modals[name].isShowing = false;
+    },
+
+    onSettingSaveClick() {
+      this.saveSettings();
+      this.closeModal('settings');
+    },
   },
 
 };
 </script>
 
 <style scoped lang="scss">
+
+
+.HelpTip {
+  background-color: #222222;
+  border-radius: 50%;
+  cursor: help;
+  font-size: 12px;
+  height: 18px;
+  display: inline-block;
+  position: relative;
+  width: 18px;
+}
+
+.HelpTip-icon {
+  color: white;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+
 
 $app-editor-settings-border-radius: 4px;
 $app-editor-settings-background-color: $color-gray;
@@ -353,6 +473,11 @@ $app-editor-settings-background-color: $color-gray;
   > :last-child {
     margin-bottom: 0;
   }
+}
+
+.Settings-subtitle {
+  font-size: 11px;
+  margin-left: 3px;
 }
 
 .Settings-group {
@@ -439,7 +564,7 @@ $app-editor-settings-background-color: $color-gray;
   flex-direction: column;
   top: 16px;
   right: 16px;
-  z-index: 9999;
+  z-index: $app-editor-toolbar-layer;
 }
 
 .EditorToolbar-button {
@@ -464,7 +589,7 @@ $app-editor-settings-background-color: $color-gray;
   }
 }
 
-.EditorToolbar-button--run {
+.EditorToolbar-button.is-run {
   background-color: #d8cc6d;
 
   &.is-busy {
@@ -477,7 +602,7 @@ $app-editor-settings-background-color: $color-gray;
   }
 }
 
-.EditorToolbar-button--settings {
+.EditorToolbar-button.is-settings {
   background-color: $color-info;
 
   > span {
@@ -485,6 +610,10 @@ $app-editor-settings-background-color: $color-gray;
   }
 }
 
+
+.EditorToolbar-button.is-walkthrough {
+  background-color: rgba(245, 155, 155, 0.2);
+}
 
 
 
@@ -577,7 +706,7 @@ $app-editor-settings-background-color: $color-gray;
   padding-top: 1rem;
   position: absolute;
   width: 100%;
-  z-index: 10;
+  z-index: $app-editor-error-layer;
 }
 
 .EditorError-location {

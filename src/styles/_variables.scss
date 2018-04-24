@@ -1,9 +1,30 @@
+$app-layer-1: 100;
+$app-layer-2: 200;
+$app-layer-3: 300;
+$app-layer-4: 400;
+$app-layer-5: 500;
+$app-layer-6: 600;
+$app-layer-7: 700;
+$app-layer-8: 800;
+$app-layer-9: 900;
+$app-layer-10: 1000;
+$app-layer-11: 1100;
+$app-layer-12: 1200;
+$app-layer-13: 1300;
+$app-layer-14: 1400;
+$app-layer-15: 1500;
+
+$app-editor-error-layer: $app-layer-1;
+$app-coverage-marker-layer: $app-layer-1;
+$app-editor-toolbar-layer: $app-layer-5;
+$app-editor-notification-layer: $app-layer-10;
+$app-overlay-layer: $app-layer-14;
+$app-tooltip-layer: $app-layer-15;
+
 
 $app-headings: (h1, h2, h3, h4, h5, h6);
 $app-header-height: 40px;
 $app-path-images: '../assets/images/';
-
-$codemirror-gutter-border-color: darken(#e6e6e6, 4);
 
 $app-backup-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 
@@ -46,6 +67,8 @@ $color-error: hsla(11, 100%, 64%, 1);
 $color-info: hsla(197, 88%, 58%, 1); // a nice blue
 $color-gray: #eae9ea;
 
+// $meme: #e8e7e0;
+
 // #5abef9 // blue replacement?
 
 
@@ -62,3 +85,32 @@ $app-button-font-family: Montserrat;
   padding: 10px 22px;
   user-select: none;
 }
+
+
+
+
+$app-model-content-box-shadow: $app-box-shadow-1;
+$app-model-content-width: 600px;
+
+$app-editor-notification-background-default: $color-gray;
+$app-editor-notification-background-error: $color-error;
+$app-editor-notification-color-default: rgba(black, 0.6);
+$app-editor-notification-color-error: rgba(white, 0.97);
+$app-editor-notification-padding-x: 16px;
+$app-editor-notification-padding-y: 16px;
+$app-editor-notification-border-radius: 4px;
+
+$app-tooltip-background: $color-gray;
+$app-tooltip-border-color: rgba(black, 0.1);
+$app-tooltip-foreground: rgba(black, 0.6);
+$app-tooltip-font-size: 12px;
+$app-tooltip-padding-x: 12px;
+$app-tooltip-padding-y: 8px;
+$app-tooltip-border-radius: 4px;
+$app-tooltip-box-shadow: $app-box-shadow-1;
+$app-tooltip-line-height: 1.8,;
+
+$app-dropdown-padding-y: 16px;
+$app-dropdown-padding-x: 22px;
+$app-dropdown-width: 220px;
+$app-dropdown-border-radius: 3px;
