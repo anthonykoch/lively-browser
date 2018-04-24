@@ -84,12 +84,27 @@ const exec = async (payload, reply) => {
   };
 
   const coveredInsertions = {};
+  const ids = [];
+
   const values = {
     lastId: 0,
   };
 
+  let lastSent = false;
+
   const result = await run(payload.input, {
     track(id, hasValue, value) {
+      if (id > 40000) {
+        if (lastSent) {
+          reply({ maxCoverageReached: true });
+          lastSent = true
+        }
+
+        return;
+      }
+
+      ids.push(id);
+
       if (!coveredInsertions.hasOwnProperty(id)) {
         coveredInsertions[id] = 0;
       }
@@ -151,6 +166,7 @@ const exec = async (payload, reply) => {
 const serialize = (values, length, _start, maxChunkSize=15000) => {
   const points = {};
   const ids = [];
+
   const start =
     arguments.hasOwnProperty(2)
       ? _start || 0
