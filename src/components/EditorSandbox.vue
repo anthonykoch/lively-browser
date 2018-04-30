@@ -28,6 +28,7 @@
 import { EventEmitter } from 'events';
 
 import _ from 'lodash';
+import Vue from 'vue';
 import cuid from 'cuid';
 import Keyboard from 'keyboardjs';
 
@@ -54,171 +55,198 @@ const TIMEOUT_PHANTOM_HOVER_HIDE = 700;
  * @param  {{ content: string, loc: CodeMirrorLocation }} options
  */
 
-export class Popup extends EventEmitter {
-  constructor(cm, options) {
-    super();
-
-    const { close=false, className='' } = options;
-
-    const hasCloseClass = close === true ? 'has-close' : '';
-
-    this.isDestroyed = false;
-    this.cm = cm;
-    this.name = options.name;
-    this.$$el = document.createElement('div');
-    this.$$el.className = `EditorPopup ${className} ${hasCloseClass}`;
-    this.$$el.innerHTML =
-      `
-      <div class="EditorPopup-header"></div>
-      <div class="EditorPopup-content"></div>
-      <button class="EditorPopup-close" style="display: ${close ? 'block' : 'none'}">
+export const Popup = Vue.extend({
+  template:
+  `
+    <div
+      class="EditorPopup"
+      :class="{ 'has-close': isCloseable }"
+      @mouseenter="onMouseEnter"
+      @mouseleave="onMouseLeave"
+    >
+      <div class="EditorPopup-content">
+        <template v-for="(section, index) in content">
+          <span
+            v-if="section.content"
+            :class="getSectionClass(section.type)"
+            class="EditorPopup-contentSection"
+          >{{ section.content }}</span>
+          <span
+            v-if="section.partials"
+            class="EditorPopup-partial"
+          >
+            <span
+              v-for="partial of section.partials"
+              :class="getSectionClass(partial.type)"
+              class="EditorPopup-contentSection is-partial"
+            >{{ partial.content }}</span>
+          </span>
+          <span v-if="index != content.length - 1" class="EditorPopup-separator"></span>
+        </template>
+      </div>
+      <button
+        class="EditorPopup-close"
+        v-show="isCloseable"
+        @click="onPopupClose"
+      >
         <span>&times;</span>
       </button>
-      `;
+    </div>
+  `,
 
-    this.onPopupClose = this.onPopupClose.bind(this);
-    this.onMouseenter = this.onMouseenter.bind(this);
-    this.onMouseleave = this.onMouseleave.bind(this);
+  props: {
+    isCloseable: {
+      type: Boolean,
+      default: () => false,
+    },
+    cm: {
+      type: Object,
+      required: true,
+    },
+  },
 
-    this.tokens = {
-      show: [],
-      hide: [],
+  data() {
+    return {
+      content: [],
+      isDestroyed: false,
     };
+  },
 
-    this.$$header = this.$$el.querySelector('.EditorPopup-header');
-    this.$$content = this.$$el.querySelector('.EditorPopup-content');
-    this.close = this.$$el.querySelector('.EditorPopup-close');
-    this.close.addEventListener('click', this.onPopupClose);
+  mounted() {
+    console.log(this)
+  },
 
-    this.$$el.addEventListener('mouseenter', this.onMouseenter);
-    this.$$el.addEventListener('mouseleave', this.onMouseleave);
-  }
+  created() {
+    this.tokens = [];
+  },
 
-  onMouseenter(e) {
-    this.emit('mouseenter', e);
-  }
+  beforeDestroy() {
+    this.cancelAllHide();
+    this.cancelAllShow();
+  },
 
-  onMouseleave(e) {
-    this.emit('mouseleave', e);
-  }
+  methods: {
+    onMouseEnter(e) {
+      this.$emit('popup-mouse-enter', e);
+    },
 
-  onPopupClose() {
-    this.hide();
-  }
+    onMouseLeave(e) {
+      this.$emit('popup-mouse-leave', e);
+    },
 
-  show({
-    delay,
-    loc,
-    content='',
-    header='',
-    scrollIntoView=true,
-  }={}) {
-    const token = {};
+    onPopupClose() {
+      this.hide();
+    },
 
-    token.promise =
-      new Promise((resolve) => {
-        token.id = setTimeout(() => {
-          this.$$content.textContent = content;
-          this.$$header.textContent = header.trim();
+    getSectionClass(type) {
+      return {
+        'is-info': type === 'info',
+        'is-code': type === 'code',
+      };
+    },
 
-          if (header.trim() === '') {
-            this.$$header.style.display = 'none';
-          } else {
-            this.$$header.style.display = 'block';
-          }
+    getPartialClass(type) {
+      return '';
+    },
 
-          this.cm.addWidget({
-            line: loc.line,
-            ch: loc.column,
-          }, this.$$el);
-
-          // console.log(loc)
-
-          this.cm.scrollIntoView({
-            line: loc.line,
-            ch: loc.column + 50,
-          }, 200);
-
-          this.$$el.style.opacity = 1;
-          this.cancelShow(token);
-
-          resolve();
-        }, delay);
-      });
-
-    this.tokens.show.push(token);
-
-    return token;
-  }
-
-  hide({ delay=0 }={}) {
-    const token = {};
-
-    token.promise =
-      new Promise((resolve) => {
-        token.id = setTimeout(() => {
-          if (this.$$el.parentNode) {
-            this.$$el.parentNode.removeChild(this.$$el);
-            this.$$el.style.opacity = 0;
-          }
-
-          this.cancelHide(token);
-
-          resolve();
-        }, delay);
-      });
-
-    this.tokens.hide.push(token);
-
-    return token;
-  }
-
-  cancelHide(token) {
-    clearTimeout(token.id);
-
-    this.tokens.hide = this.tokens.hide.filter(t => t != token);
-  }
-
-  cancelShow(token) {
-    clearTimeout(token.id);
-
-    this.tokens.show = this.tokens.show.filter(t => t != token);
-  }
-
-  cancelAllHide() {
-    this.tokens.hide =
-      this.tokens.hide.filter(t => {
-        clearTimeout(t.id);
-
-        return false;
-      });
-  }
-
-  cancelAllShow() {
-    this.tokens.show =
-      this.tokens.show.filter(t => {
-        clearTimeout(t.id);
-
-        return false;
-      });
-  }
-
-  destroy() {
-    this.hide().then(() => {
-      this.$$el = null;
-      this.cm = null;
-
-      this.tokens = {
-        show: [],
-        hide: [],
+    show({
+      content=[],
+      delay,
+      loc,
+      scrollIntoView=true,
+      wrap=false,
+    }={}) {
+      const token = {
+        type: 'show',
       };
 
-      this.close.removeEventListener('click', this.onPopupClose);
-      this.removeAllListeners('mouseenter');
-      this.removeAllListeners('mouseleave');
-    });
-  }
-}
+      token.promise =
+        new Promise((resolve) => {
+          token.id = cuid();
+          token.timeout = setTimeout(() => {
+            this.cm.addWidget({
+              line: loc.line,
+              ch: loc.column,
+            }, this.$el);
+
+            this.content = content;
+
+            this.cm.scrollIntoView({
+              line: loc.line,
+              ch: loc.column + 50,
+            }, 200);
+
+            this.removeToken([token]);
+
+            resolve();
+          }, delay);
+        });
+
+      this.addToken([token]);
+
+      return token;
+    },
+
+    hide({ delay=0 }={}) {
+      const token = {
+        type: 'hide',
+      };
+
+      token.promise =
+        new Promise((resolve) => {
+          token.id = cuid();
+          token.timeout = setTimeout(() => {
+            if (this.$el.parentNode) {
+              this.$el.parentNode.removeChild(this.$el);
+            }
+
+            this.cancelHide([token]);
+
+            resolve();
+          }, delay);
+        });
+
+      this.addToken([token]);
+
+      return token;
+    },
+
+    addToken(tokens) {
+      this.tokens = this.tokens.concat(tokens);
+    },
+
+    removeToken(tokens) {
+      this.tokens =
+        this.tokens.filter((token) => tokens.some(t => t.id === token.id));
+    },
+
+    cancelHide(tokens) {
+      tokens.forEach(token => clearTimeout(token.timeout));
+
+      this.removeToken(tokens);
+    },
+
+    cancelShow(tokens) {
+      tokens.forEach(token => clearTimeout(token.timeout));
+
+      this.removeToken(tokens);
+    },
+
+    cancelAllHide() {
+      this.cancelHide(this.tokens.filter(token => token.type === 'hide'));
+    },
+
+    cancelAllShow() {
+      this.cancelShow(this.tokens.filter(token => token.type === 'show'));
+    },
+
+    destroy() {
+      return this.hide().then(() => {
+        this.cm = null;
+      });
+    },
+  },
+});
 
 /**
  * @param  {Location} loc
@@ -292,20 +320,7 @@ export default {
 
     window.addEventListener('click', this.onWindowClick);
 
-    this.popups = {
-      walkthrough: new Popup(this.cm, {
-        name: 'WalkthroughPopup',
-      }),
-      expressionHover: new Popup(this.cm, {
-        name: 'ExpressionHover',
-      }),
-      phantomHover: new Popup(this.cm, {
-        name: 'PhantomHover',
-      }),
-    };
-
-    this.popups.phantomHover.on('mouseenter', this.onPhantomPopupEnter);
-    this.popups.phantomHover.on('mouseleave', this.onPhantomPopupLeave);
+    this.createPopups();
 
     if (this.execOnReady) {
       this.$once('ready', () => {
@@ -350,8 +365,11 @@ export default {
       ['esc', this.resetWalkthrough],
       ['ctrl+shift+0', this.showFirstWalkthroughStep],
       ['ctrl+enter', this.runScript],
+      ['command+alt+enter', this.runScript],
       ['ctrl+n', this.keyWalkthroughNext],
+      ['command+shift+period', this.keyWalkthroughNext],
       ['ctrl+p', this.keyWalkthroughPrevious],
+      ['command+shift+,', this.keyWalkthroughPrevious],
     ]);
 
     Array.from(this.keymap)
@@ -362,23 +380,56 @@ export default {
     this.beautify = (val) => val;
   },
 
-  beforeDestroyed() {
+  beforeDestroy() {
     Array.from(this.keymap)
       .forEach(([key, handler]) => Keyboard.off(key, handler));
 
     this.cm.off('changes', this.onEditorChanges)
     this.cm.off('change', this.onEditorChange);
     this.cm = null;
-    this.hideAllPopups();
 
-    Object.values(this.popups).forEach(popup => popup.destroy());
-
-    this.popups = {};
+    this.destroyPopups();
 
     window.removeEventListener('click', this.onWindowClick);
   },
 
   methods: {
+    destroyPopups() {
+      Object.values(this.popups).forEach(popup => {
+        popup.$destroy();
+      });
+
+      this.popups = {};
+    },
+
+    createPopups() {
+      this.popups = {
+        walkthrough: new Popup({
+          propsData: {
+            cm: this.cm,
+          },
+        }),
+        expressionHover: new Popup({
+          propsData: {
+            cm: this.cm,
+          },
+        }),
+        phantomHover: new Popup({
+          propsData: {
+            cm: this.cm,
+          },
+        }),
+      };
+
+      this.popups.phantomHover.$on('popup-mouse-enter', this.onPhantomPopupEnter);
+      this.popups.phantomHover.$on('popup-mouse-leave', this.onPhantomPopupLeave);
+
+      Object.values(this.popups)
+        .forEach(popup => {
+          popup.$mount();
+        });
+    },
+
     keyWalkthroughNext(e) {
       e.preventDefault();
       this.stepNextInWalkthrough();
@@ -402,7 +453,10 @@ export default {
           line: cursor.line,
           column: cursor.ch,
         },
-        content: this.beautify(content),
+        content: [{
+          type: 'code',
+          content: this.beautify(content),
+        }],
       });
     },
 
@@ -477,18 +531,23 @@ export default {
         // console.log('before', before, this.coverage.ids);
 
         if (isInsertionPastChangedLine) {
-          // console.log('isInsertionPastChangedLine');
-          // const remainder = this.insertions.items.slice(index);
-
+          const loc = insertion.node.loc;
           const viewport = this.cm.getViewport();
-          // const line = Math.floor((viewport.to - viewport.from) / 2) - 1;
           const line = viewport.from;
 
-          // console.log('ismeme', viewport.from)
-
           this.popups.walkthrough.show({
-            header: `This point can not be highlighted because it has been modified`,
-            content: this.coverage.values[index],
+            content: [{
+                content: `This point can not be highlighted because it has been modified`,
+                type: 'info',
+              }, {
+                partials: [{
+                  content: `${loc.start.line}:${loc.start.column}`,
+                }, {
+                  type: 'code',
+                  content: this.beautify(this.coverage.values[index]),
+                }],
+              },
+            ],
             loc: {
               line,
               // If the loc spans multiple lines, display the popup at ending column
@@ -499,12 +558,15 @@ export default {
         } else if (insertion) {
           const loc = toCodemirrorLoc(insertion.node.loc);
           const walkthroughHighlightClass = 'WalkthoughtStep';
-          const ch = ((loc[0].line === loc[1].line) ? loc[0].ch: loc[1].ch - 1);
+          const ch = ((loc[0].line === loc[1].line) ? loc[0].ch : loc[1].ch - 1);
 
           this.activeWalkthroughInsertionId = insertion.id;
 
           this.popups.walkthrough.show({
-            content: this.beautify(this.coverage.values[index]),
+            content: [{
+              type: 'code',
+              content: this.beautify(this.coverage.values[index])
+            }],
             loc: {
               line: loc[1].line,
               // If the loc spans multiple lines, display the popup at ending column
@@ -517,7 +579,6 @@ export default {
 
           this.walkthroughMarker = this.cm.doc.markText(loc[0], loc[1], {
             className: walkthroughHighlightClass,
-            title: 'a title ma dewdy',
           });
         }
       }
@@ -757,7 +818,10 @@ export default {
             line: phantom.line - 1,
             column: phantom.column,
           },
-          content: phantom.content.map(value => this.beautify(value)).toString(),
+          content: [{
+            type: 'code',
+            content: phantom.content.map(value => this.beautify(value)).toString(),
+          }],
         });
       }
     },

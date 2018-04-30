@@ -328,23 +328,52 @@ $marker-coverage-error: #e54545; // red
   overflow: auto;
   transition: 400ms opacity;
   z-index: $app-walthrough-popup-layer;
-
 }
 
-.EditorPopup-content,
-.EditorPopup-header {
-  padding: $app-editor-popup-padding-y $app-editor-popup-padding-r $app-editor-popup-padding-y $app-editor-popup-padding-l;
+.EditorPopup-contentSection {
+  display: block;
+  line-height: 1.6;
   max-width: 100%;
+  padding: $app-editor-popup-padding-y $app-editor-popup-padding-r $app-editor-popup-padding-y $app-editor-popup-padding-l;
+
+  &.is-info {
+    background-color: rgba(black, 0.14);
+    border: 1px solid rgba(black, 0.06);
+    border-radius: 4px;
+    margin: 8px 6px;
+    white-space: normal;
+  }
+
+  &.is-code {
+    overflow: auto;
+    white-space: pre;
+  }
+
+  &.is-partial {
+    // overflow: auto;
+  }
+
+  &.is-partial:not(:last-child) {
+    border-right: 1px solid rgba(black, 0.08);
+    padding-right: $app-editor-popup-padding-r;
+  }
+}
+
+.EditorPopup-partial {
+  display: flex;
 }
 
 .EditorPopup-separator {
-  border-bottom: 1px solid rgba(black, 0.1);
+  border-bottom: 1px solid rgba(black, 0.16);
   display: block;
   width: 100%;
-}
 
-.EditorPopup-content {
-  white-space: pre;
+  &:before {
+    // border-bottom: 1px solid rgba(white, 0.4);
+    content: '';
+    display: block;
+    width: 100%;
+  }
 }
 
 .EditorPopup-close {
