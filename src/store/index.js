@@ -7,7 +7,7 @@ import settings from './settings';
 export default {
   strict: true,
   plugins: [createPersistedState({
-    key: 'editor'
+    //
   })],
   modules: {
     editor,

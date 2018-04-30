@@ -26,11 +26,12 @@ import emmet from '@emmetio/codemirror-plugin';
 
 emmet(CodeMirror);
 
-const createCoverageMarker = (isCovered) => {
+const createCoverageMarker = (options={}) => {
   const element = document.createElement('div');
-  const state = isCovered ? 'is-covered' : 'is-uncovered';
+  const isCovered = options.isCovered ? 'is-covered' : 'is-uncovered';
+  const isError = options.isError ? 'is-error': '';
 
-  element.className = `CoverageMarker ${state}`;
+  element.className = `CoverageMarker ${isCovered} ${isError}`;
   element.textContent = '*';
 
   return element;
@@ -111,6 +112,9 @@ export default {
         extraKeys: {
           Tab: 'emmetExpandAbbreviation',
           Enter: 'emmetInsertLineBreak',
+          'Ctrl-P'() {},
+          'Ctrl-N'() {},
+          'Ctrl-Shift-0'() {},
         },
       },
     };
@@ -128,8 +132,6 @@ export default {
   },
 
   beforeDestroy() {
-    // this.clearPhantoms();
-    // this.clearCoverage();
     this.cm = null;
   },
 
@@ -145,6 +147,18 @@ export default {
   },
 
   methods: {
+    clearBelow(startingLine) {
+      // console.log(Object.keys(this.coveredByLine), {startingLine})
+      Object.keys(this.coveredByLine)
+        .forEach((key) => {
+          const line = (key | 0) + 1;
+
+          if (line > startingLine) {
+            this.cm.setGutterMarker(line, GUTTER_KEY, null);
+          }
+        });
+    },
+
     clearCoverage() {
       return this.cm.clearGutter(GUTTER_KEY);
     },
@@ -157,15 +171,14 @@ export default {
         for (let i = 0; i < insertions.items.length; i += 1) {
           const insertion = insertions.items[i];
           const loc = insertion.node.loc;
-          const element = createCoverageMarker(false);
+          const element = createCoverageMarker({ isCovered: false, });
 
           this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
         }
       });
     },
 
-    renderCovered(insertion, execId) {
-      const locStart = insertion.node.loc.start;
+    renderCovered(locStart, execId, options={}) {
       const line = locStart.line - 1;
       // const [start, end] = getSingleCharFromLoc(locStart);
       // const rangeId = createRangeId(start, end, execId);
@@ -174,7 +187,10 @@ export default {
         return;
       }
 
-      const element = createCoverageMarker(true);
+      const element = createCoverageMarker({
+        isCovered: true,
+        isError: options.isError,
+      });
 
       this.cm.setGutterMarker(line, GUTTER_KEY, element);
       this.coveredByLine[line] = true;
@@ -242,6 +258,22 @@ export default {
       this.hasDirtyPhantoms = false;
     },
 
+    onPhantomMouseenter(e) {
+      this.$emit('mouseenter-phantom', e, e.target.phantom, e.target);
+    },
+
+    onPhantomMouseleave(e) {
+      this.$emit('mouseleave-phantom', e, e.target.phantom, e.target);
+    },
+
+    onWidgetMouseenter(e) {
+      this.$emit('mouseenter-widget', e, e.target.phantoms, e.target);
+    },
+
+    onWidgetMouseleave(e) {
+      this.$emit('mouseleave-widget', e, e.target.phantoms, e.target);
+    },
+
     renderBlockPhantoms() {
       const viewport = this.cm.getViewport();
       const phantomsInView = this.getPhantomsInView(viewport);
@@ -269,6 +301,7 @@ export default {
         // Remove the old phantoms and recycle the widget phantom node
         this.widgets.forEach((widget) => {
           widget.clear();
+
           this.addElementToPool(widget.node);
         });
 
@@ -288,16 +321,36 @@ export default {
                 coverGutter: false,
                 noHScroll: true,
               });
+
             this.widgetsByLine[line] = widget;
             this.widgets.push(widget);
+
+            widget.node.addEventListener('mouseenter', this.onWidgetMouseenter);
+            widget.node.addEventListener('mouseleave', this.onWidgetMouseleave);
+            widget.node.phantom = phantoms;
           });
 
         // console.timeEnd('render-block');
       });
     },
 
-    addElementToPool(element) {
-      this.phantomPool.push(element);
+    addElementToPool(el) {
+      el.phantoms = null;
+
+      const children = el.querySelector('.Phantom-messageList').children;
+
+      el.removeEventListener('mouseenter', this.onWidgetMouseenter);
+      el.removeEventListener('mouseleave', this.onWidgetMouseleave);
+
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+
+        child.phantom = null;
+        child.removeEventListener('mouseenter', this.onPhantomMouseenter);
+        child.removeEventListener('mouseleave', this.onPhantomMouseleave);
+      }
+
+      this.phantomPool.push(el);
     },
 
     getPooledElement() {
@@ -312,7 +365,6 @@ export default {
 
     updatePhantomElement(el, { column, line, contents: phantoms, maxPerLine=10 }) { /* eslint-disable no-param-reassign */
       // Reset the elements attributes in case they aren't reset wherever they are used
-      // console.time('updatePhantomElement');
 
       const token = this.cm.getTokenAt({ line, ch: 0 });
       const whitespace =
@@ -345,18 +397,28 @@ export default {
             ? ', '
             : '';
 
+        div.phantom = phantom;
+
         div.textContent = content.join(', ') + comma;
         // TODO: Enforce a max line length/max item length
         div.textContent = content.slice(0, 10).join(', ') + comma;
         div.className = `Phantom-messageListItem ${className}`;
+
         fragment.appendChild(div);
-        // hey += Math.min(phantoms.length, 10);
+
+        div.addEventListener('mouseenter', this.onPhantomMouseenter);
+        div.addEventListener('mouseleave', this.onPhantomMouseleave);
       }
 
       let messageList = el.querySelector('.Phantom-messageList');
 
       messageList.appendChild(fragment);
-      // console.timeEnd('updatePhantomElement');
+
+      // NOTE: This is necessary to know which phantoms were mouseentered
+      el.phantoms = phantoms;
+
+      el.addEventListener('mouseenter', this.onWidgetMouseenter);
+      el.addEventListener('mouseleave', this.onWidgetMouseleave);
 
       return el;
     },

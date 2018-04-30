@@ -84,16 +84,22 @@ const exec = async (payload, reply) => {
   };
 
   const coveredInsertions = {};
-  const ids = [];
 
-  const values = {
-    lastId: 0,
+  /**
+   * Resets variables to default state to release memory
+   */
+  const reset = () => {
+    coverage = { ids: [], values: [], };
   };
 
   let lastSent = false;
+  let coverage = null;
+
+  reset();
 
   const result = await run(payload.input, {
     track(id, hasValue, value) {
+
       if (id > 40000) {
         if (lastSent) {
           reply({ maxCoverageReached: true });
@@ -103,19 +109,15 @@ const exec = async (payload, reply) => {
         return;
       }
 
-      ids.push(id);
-
       if (!coveredInsertions.hasOwnProperty(id)) {
         coveredInsertions[id] = 0;
       }
 
-      if (hasValue && coveredInsertions[id] < 11) {
-        // Only serialize the first 11 values
-        if (!values.hasOwnProperty(id)) {
-          values[id] = [];
-        }
-
-        values[id].push(value);
+      // Only serialize the first 11 values
+      if (hasValue) {
+      // if (hasValue && coveredInsertions[id] < 11) {
+        coverage.ids.push(id);
+        coverage.values.push(value);
       }
 
       // Only send the insertion point once
@@ -127,7 +129,6 @@ const exec = async (payload, reply) => {
       }
 
       coveredInsertions[id] += 1;
-      values.lastId = id;
     },
     env: 'browser',
     sourcemap: payload.sourcemap,
@@ -137,10 +138,6 @@ const exec = async (payload, reply) => {
   });
 
   // console.log(result?.error?.stack)
-
-  const coverage = serialize(values, values.lastId);
-
-  let lastChunkSize = coverage.chunkSize;
 
   // TODO: If there are more values to serialize then do them later
   // setTimeout(() => {
@@ -152,9 +149,12 @@ const exec = async (payload, reply) => {
   //   }
   // }, 0);
 
-  // console.log(serialized.chunkSize)
-  // console.log({values})
-  reply({ execId, coverage });
+  reply({
+    execId,
+    coverage: toJson(coverage),
+  });
+
+  reset();
 
   return {
     execId,
@@ -163,48 +163,11 @@ const exec = async (payload, reply) => {
   };
 };
 
-const serialize = (values, length, _start, maxChunkSize=15000) => {
-  const points = {};
-  const ids = [];
-
-  const start =
-    arguments.hasOwnProperty(2)
-      ? _start || 0
-      : values.length;
-
-  let chunkSize = 0;
-  let id = start;
-
-  for (; id < length && chunkSize <= maxChunkSize; id++) {
-    if (values.hasOwnProperty(id)) {
-      ids.push(id);
-
-      if (!points.hasOwnProperty(id)) {
-        points[id] = [];
-      }
-
-      const arr = values[id];
-
-      for (let i = 0; i < arr.length; i += 1) {
-        points[id].push(JSUtils.serialize(arr[i]));
-        chunkSize += 1;
-
-        // console.log(chunkSize, chunkSize >= maxChunkSize)
-
-        // if (chunkSize >= maxChunkSize) {
-        //   break;
-        // }
-      }
-    }
-  }
-
+const toJson = (coverage) => {
   return {
-    start: 0,
-    end: id,
-    ids,
-    points,
-    chunkSize,
-  };;
+    ids: coverage.ids.map(id => id),
+    values: coverage.values.map(value => JSUtils.serialize(value)),
+  };
 };
 
 receiver.on('exec', exec);
@@ -219,7 +182,7 @@ self.addEventListener('message', async ({ data: message }) => {
 });
 
 self.addEventListener('error', () => {
-  console.log('apwokdawpd');
+  // console.log('apwokdawpd');
 });
 
 postMessage({ sandboxReady: true });

@@ -14,6 +14,9 @@ const a = () => {
 };
 
 a();
+
+user;
+
 `,
   },
   mutations: {

@@ -235,10 +235,6 @@ export default {
       isBusy: false,
       error: null,
       errorExecId: null,
-      userSettings: {
-        'execution.mode': 'manual',
-        'execution.walkthrough': false,
-      },
 
       notificationsById: {
         webWorkerBusy: {
@@ -265,7 +261,7 @@ export default {
       code: state => state.editor.code,
       article: state => state.articles.article,
       articlesMeta: state => state.articles.articlesMeta,
-      settings: state => state.settings,
+      userSettings: state => ({ ...state.settings.user }),
     }),
 
     ...mapGetters({
@@ -411,7 +407,6 @@ export default {
 
 <style scoped lang="scss">
 
-
 .HelpTip {
   background-color: #222222;
   border-radius: 50%;
@@ -430,6 +425,8 @@ export default {
   top: 50%;
   transform: translate(-50%, -50%);
 }
+
+
 
 
 
@@ -556,64 +553,6 @@ $app-editor-settings-background-color: $color-gray;
 
 // #e8e7e0 // gray green
 // #eaaa5d // orange
-
-
-.EditorToolbar {
-  position: fixed;
-  display: flex;
-  flex-direction: column;
-  top: 16px;
-  right: 16px;
-  z-index: $app-editor-toolbar-layer;
-}
-
-.EditorToolbar-button {
-  @include button;
-  border-radius: 3px;
-  box-shadow: 0 8px 22px -3px rgba(black, 0.5);
-  color: white;
-  font-size: 10px;
-  height: 40px;
-  padding: 0;
-  margin-bottom: 0.5rem;
-  position: relative;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-  width: 44px;
-
-  > span {
-    filter: drop-shadow(3px 3px 6px rgba(black, 0.2));
-    left: 50%;
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
-}
-
-.EditorToolbar-button.is-run {
-  background-color: #d8cc6d;
-
-  &.is-busy {
-    background-color: $color-error;
-    // hsla(11, 100%, 64%, 1);
-  }
-
-  > span {
-    font-size: 15px;
-  }
-}
-
-.EditorToolbar-button.is-settings {
-  background-color: $color-info;
-
-  > span {
-    font-size: 20px;
-  }
-}
-
-
-.EditorToolbar-button.is-walkthrough {
-  background-color: rgba(245, 155, 155, 0.2);
-}
 
 
 

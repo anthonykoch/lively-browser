@@ -16,8 +16,9 @@ $app-layer-15: 1500;
 
 $app-editor-error-layer: $app-layer-1;
 $app-coverage-marker-layer: $app-layer-1;
-$app-editor-toolbar-layer: $app-layer-5;
-$app-editor-notification-layer: $app-layer-10;
+$app-walthrough-popup-layer: $app-layer-9;
+$app-editor-toolbar-layer: $app-layer-10;
+$app-editor-notification-layer: $app-layer-11;
 $app-overlay-layer: $app-layer-14;
 $app-tooltip-layer: $app-layer-15;
 
@@ -114,3 +115,9 @@ $app-dropdown-padding-y: 16px;
 $app-dropdown-padding-x: 22px;
 $app-dropdown-width: 220px;
 $app-dropdown-border-radius: 3px;
+
+$app-editor-popup-background: rgb(81, 63, 58);
+$app-editor-popup-padding-y: 2px;
+// $app-editor-popup-padding-x: 8px;
+$app-editor-popup-padding-l: 12px;
+$app-editor-popup-padding-r: 12px;

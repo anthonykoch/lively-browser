@@ -186,7 +186,6 @@ pre {
 .CodeMirror-linewidget {
   height: 0;
   overflow: visible;
-  pointer-events: none;
 }
 
 .CodeMirror-foldgutter {
@@ -225,7 +224,10 @@ pre {
   // overflow: auto;
   position: relative;
   top: 0;
-  // white-space: pre;
+  max-width: 55ch;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
   z-index: 1;
 }
 
@@ -309,6 +311,131 @@ $marker-coverage-error: #e54545; // red
   &:after {
     background-color: $marker-coverage-uncovered;
   }
+}
+
+
+
+.EditorPopup {
+  background-color: $app-editor-popup-background; // rgba(245, 155, 155, 0.2);
+  border-radius: 4px;
+  box-shadow: $app-box-shadow-1;
+  display: inline-block;
+  justify-content: space-between;
+  // transform: translate(-20%, 0);
+  // transform: translateZ(0);
+  max-height: 233px;
+  max-width: 420px;
+  overflow: auto;
+  transition: 400ms opacity;
+  z-index: $app-walthrough-popup-layer;
+
+}
+
+.EditorPopup-content,
+.EditorPopup-header {
+  padding: $app-editor-popup-padding-y $app-editor-popup-padding-r $app-editor-popup-padding-y $app-editor-popup-padding-l;
+  max-width: 100%;
+}
+
+.EditorPopup-separator {
+  border-bottom: 1px solid rgba(black, 0.1);
+  display: block;
+  width: 100%;
+}
+
+.EditorPopup-content {
+  white-space: pre;
+}
+
+.EditorPopup-close {
+  display: none;
+  background-color: $color-error;
+  border: 0;
+  border-radius: 0 4px 4px 0;
+  // bottom: 0;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  line-height: 24px;
+  outline: 0;
+  text-align: center;
+  // height: 22px;
+  // padding: 2px 6px;
+  // height: 20px;
+  // width: 20px;
+  // position: absolute;
+  // right: 0;
+  // top: 0;
+  user-select: none;
+  width: 22px;
+
+  > span {
+    line-height: inherit;
+    // positi
+  }
+}
+
+
+
+
+
+
+.EditorToolbar {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  top: 16px;
+  right: 16px;
+  z-index: $app-editor-toolbar-layer;
+}
+
+.EditorToolbar-button {
+  @include button;
+  border-radius: 3px;
+  box-shadow: 0 8px 22px -3px rgba(black, 0.5);
+  color: white;
+  font-size: 10px;
+  height: 38px;
+  padding: 0;
+  margin-bottom: 0.5rem;
+  position: relative;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+  width: 42px;
+
+  > span {
+    filter: drop-shadow(3px 3px 6px rgba(black, 0.2));
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.EditorToolbar-button.is-run {
+  background-color: #d8cc6d;
+
+  &.is-busy {
+    background-color: $color-error;
+    // hsla(11, 100%, 64%, 1);
+  }
+
+  > span {
+    font-size: 14px;
+  }
+}
+
+.EditorToolbar-button.is-settings {
+  background-color: $color-info;
+
+  > span {
+    font-size: 18px;
+  }
+}
+
+
+.EditorToolbar-button.is-walkthrough {
+  background-color: rgba(245, 155, 155, 0.2);
 }
 
 

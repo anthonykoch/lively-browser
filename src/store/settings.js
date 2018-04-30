@@ -1,12 +1,8 @@
 import assert from 'assert';
 
-import _ from 'lodash';
-
 const defaultSettings = {
-  execution: {
-    walkthrough: false,
-    mode: 'manual',
-  },
+  'execution.walkthrough': false,
+  'execution.mode': 'manual',
 };
 
 const toArray = (arg) => Array.isArray(arg) ? arg: [arg];
@@ -25,7 +21,7 @@ export default {
     saveSettings(state, settings) {
       Object.entries(settings)
         .forEach(([path, value]) => {
-          _.set(state.user, path, value);
+          state.user[path] = value;
         });
     },
   },
@@ -39,7 +35,7 @@ export default {
      * Returns true if the path is in the user settings
      */
     hasUserSetting: (state) => (...args) => {
-      return args.map(path => _.has(state.user, path));
+      return args.map(path => state.user.hasOwnProperty(path))
     },
 
     /**
@@ -47,18 +43,18 @@ export default {
      */
     getUserSettingOrDefault: (state) => (...args) => {
       return args.map(path => {
-        const result = _.get(state.user, path);
+        const result = state.user[path];
 
-        assert(_.has(defaultSettings, path), `Invalid settings path ${path}`);
+        assert(defaultSettings.hasOwnProperty(path), `Invalid settings path ${path}`);
 
-        return result === undefined ? _.get(defaultSettings, path) : result;
+        return result === undefined ? defaultSettings[path] : result;
       });
     },
 
     /**
      * Retrieved the user setting unmodified
      */
-    getUserSetting: (state) => (...args) => args.map(path => _.get(state.user, path)),
+    getUserSetting: (state) => (...args) => args.map(path => state.user[path]),
 
     /**
      * If any of the settings retrieved are not valid, the default setting is returned.
@@ -69,7 +65,7 @@ export default {
 
         const value = _.get(state.user, path);
 
-        return validators[path](value) ? value : _.get(state.default, path);
+        return validators[path](value) ? value : state.default[path];
       });
     },
   },
