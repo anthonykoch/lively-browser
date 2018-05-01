@@ -2,17 +2,27 @@
 
 module.exports = {
   root: true,
-  parser: 'babel-eslint',
   parserOptions: {
-    sourceType: 'module'
+    ecmaVersion: 9,
+    parser: 'babel-eslint',
+    sourceType: 'module',
+    impliedStrict: true,
   },
   env: {
     browser: true,
+    commonjs: true
   },
-  extends: 'airbnb-base',
+  extends: [
+    'eslint:recommended',
+    'plugin:import/errors',
+    // 'plugin:import/warnings',
+    // 'airbnb-base',
+    'plugin:vue/recommended',
+  ],
   // required to lint *.vue files
   plugins: [
-    'html'
+    'import',
+    'vue',
   ],
   // check if imports actually resolve
   settings: {
@@ -24,6 +34,12 @@ module.exports = {
   },
   // add your custom rules here
   rules: {
+    'vue/html-self-closing': ['error', {
+      'html': {
+        component: 'never',
+        normal: 'never'
+      }
+    }],
     // don't require .vue extension when importing
     'import/extensions': ['error', 'always', {
       js: 'never',
@@ -31,14 +47,14 @@ module.exports = {
     }],
     // disallow reassignment of function parameters
     // disallow parameter object manipulation except for specific exclusions
-    'no-param-reassign': ['error', {
-      props: true,
-      ignorePropertyModificationsFor: [
-        'state', // for vuex state
-        'acc', // for reduce accumulators
-        'e' // for e.returnvalue
-      ]
-    }],
+    // 'no-param-reassign': ['error', {
+    //   props: true,
+    //   ignorePropertyModificationsFor: [
+    //     'state', // for vuex state
+    //     'acc', // for reduce accumulators
+    //     'e' // for e.returnvalue
+    //   ]
+    // }],
     // allow optionalDependencies
     'import/no-extraneous-dependencies': ['error', {
       optionalDependencies: ['test/unit/index.js']

@@ -1,9 +1,10 @@
 import sourcemap from 'source-map';
 
-import * as JSUtils from 'lively-javascript/dist/utils';
-import { run } from 'lively-javascript/dist/exec';
+import * as JSUtils from 'scuffka-javascript/dist/utils';
+import { run } from 'scuffka-javascript/dist/exec';
 import Talkie from 'editorconnect-node/dist/talkie';
 import * as Messages from 'editorconnect-node/dist/messages';
+import cuid from 'cuid';
 
 import logger from '@/logger';
 
@@ -15,9 +16,7 @@ sourcemap.SourceMapConsumer.initialize({
 });
 
 // const DOMAIN = `${window.location.protocol}//${window.location.host}`;
-const ORIGIN = `name:lively-iframe;id:${Math.random() + Math.random()}`;
-
-// window.process = process;
+const ORIGIN = cuid();
 
 // eslint-disable-next-line
 logger.info('Iframe.js started');
@@ -45,8 +44,20 @@ const $require = moduleName => loadModule(moduleName);
 const CHUNK_TIMEOUT = 32;
 const CHUNK_SIZE = 5000;
 
+class Receiver extends Talkie {
+  get origin() {
+    return { id: ORIGIN };
+  }
+
+  send(message) {
+    queue.push(message);
+  }
+}
+
 let queue = [];
 let timeoutId = null;
+
+const receiver = new Receiver();
 
 const start = () => {
   if (queue.length) {
@@ -59,75 +70,65 @@ const start = () => {
 
 start();
 
+// eslint-disable-next-line no-unused-vars
 function stop() {
   clearTimeout(timeoutId);
 }
 
-function enqueue(item) {
-  queue.push(item);
-}
-
-const exec = async (payload, meta) => {
-  const { execId } = meta;
-  // eslint-disable-next-line
-  const __dirname = payload.__dirname;
-  // eslint-disable-next-line
-  const __filename = payload.__filename;
-  const exports = {};
+const exec = async (payload, reply) => {
+  const { execId, __dirname, __filename } = payload;
 
   const module = {
     require: $require,
-    exports,
+    exports: {},
   };
 
-  let part = 0;
+  const coveredInsertions = {};
 
-  const idsByLine = {};
+  /**
+   * Resets variables to default state to release memory
+   */
+  const reset = () => {
+    coverage = { ids: [], values: [], };
+  };
+
+  let lastSent = false;
+  let coverage = null;
+
+  reset();
 
   const result = await run(payload.input, {
     track(id, hasValue, value) {
-      // console.log(id, hasValue, value)
 
-      if (!idsByLine.hasOwnProperty(id)) {
-        idsByLine[id] = 0;
-      }
+      if (id > 40000) {
+        if (lastSent) {
+          reply({ maxCoverageReached: true });
+          lastSent = true
+        }
 
-      // Don't do anything because we only want to show 10 at a time
-      // and returning after 10 improves performance tremendously
-      if (idsByLine[id] === 10) {
         return;
       }
 
-      idsByLine[id] += 1;
+      if (!coveredInsertions.hasOwnProperty(id)) {
+        coveredInsertions[id] = 0;
+      }
 
+      // Only serialize the first 11 values
       if (hasValue) {
-        enqueue({
+      // if (hasValue && coveredInsertions[id] < 11) {
+        coverage.ids.push(id);
+        coverage.values.push(value);
+      }
+
+      // Only send the insertion point once
+      if (coveredInsertions[id] === 0) {
+        reply({
           execId,
-          part,
-          done: false,
-          payload: {
-            insertion: { id },
-            meta: {
-              isPromise: typeof value?.then === 'function',
-            },
-            expression: {
-              // value: 'undefined',
-              value: JSUtils.serialize(value),
-            },
-          }
-        });
-      } else {
-        // console.log('replying ma dude')
-        enqueue({
-          execId,
-          part,
-          done: false,
-          payload: {
-            insertion: { id },
-          },
+          insertionId: id,
         });
       }
-      // console.timeEnd('hey');
+
+      coveredInsertions[id] += 1;
     },
     env: 'browser',
     sourcemap: payload.sourcemap,
@@ -138,23 +139,50 @@ const exec = async (payload, meta) => {
 
   // console.log(result?.error?.stack)
 
-  if (Number.isFinite(result?.error?.loc?.line)) {
-    // Normalize lines to start at 1 since node errors start at 1.
-    // No need to mess with the column since they start at 0.
-    // result.error.loc.line -= 1;
-  }
+  // TODO: If there are more values to serialize then do them later
+  // setTimeout(() => {
 
-  return { payload: result, execId, done: true, part };
+  //   while (chunkSize !== 0) {
+  //     const serialized = serialize(values, lastChunkSize);
+
+  //     reply(serialized);
+  //   }
+  // }, 0);
+
+  reply({
+    execId,
+    coverage: toJson(coverage),
+  });
+
+  reset();
+
+  return {
+    execId,
+    coveredInsertions,
+    result,
+  };
 };
+
+const toJson = (coverage) => {
+  return {
+    ids: coverage.ids.map(id => id),
+    values: coverage.values.map(value => JSUtils.serialize(value)),
+  };
+};
+
+receiver.on('exec', exec);
 
 self.addEventListener('message', async ({ data: message }) => {
   if (Messages.isPing(message)) {
+    // We need to send pong right away, so we just postMessage an array.
     postMessage([Messages.pong()]);
-  } else if (message.action === 'exec') {
-    logger.info('SandboxIncoming', Date.now(), Messages.isValid(message), message);
-
-    postMessage(await exec(message.payload, message.meta));
+  } else {
+    receiver.dispatch([message]);
   }
+});
+
+self.addEventListener('error', () => {
+  // console.log('apwokdawpd');
 });
 
 postMessage({ sandboxReady: true });

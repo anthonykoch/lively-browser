@@ -1,6 +1,6 @@
 import logger from 'loglevel';
 
 logger.disableAll();
-logger.enableAll();
+// logger.enableAll();
 
 export default logger;

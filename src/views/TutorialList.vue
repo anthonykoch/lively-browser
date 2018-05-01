@@ -1,9 +1,11 @@
 <template>
   <div>
-
     <h2>Tutorials</h2>
     <ul>
-      <li v-for="articleMeta in articlesMeta">
+      <li
+        v-for="articleMeta in articlesMeta"
+        :key="articleMeta.id"
+      >
         <router-link :to="{ path: articleMeta.slug }">{{ articleMeta.title }}</router-link>
       </li>
     </ul>
@@ -24,6 +26,9 @@ export default {
       await vm.$store.dispatch(LOAD_ARTICLES_META_REQUEST);
     });
   },
+  components: {
+    //
+  },
   data() {
     return {
       console,
@@ -35,9 +40,6 @@ export default {
     }),
   },
   methods: {
-    //
-  },
-  components: {
     //
   },
 };

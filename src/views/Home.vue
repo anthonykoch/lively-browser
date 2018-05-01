@@ -1,6 +1,5 @@
 <template>
   <div>
-    awdawd
     <router-link :to="{ name: 'tutorial', params: { slug: 'how-objects-and-properties-work' } }">
       Tutorial
     </router-link>
