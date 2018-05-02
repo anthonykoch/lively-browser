@@ -1,15 +1,19 @@
 import assert from 'assert';
 
 const defaultSettings = {
-  'execution.walkthrough': false,
+  'execution.isWalkthroughEnabled': false,
   'execution.mode': 'manual',
 };
 
 const toArray = (arg) => Array.isArray(arg) ? arg: [arg];
 
 const validators = {
-  'execution.walkthrough': (value) => typeof value === 'boolean',
+  'execution.isWalkthroughEnabled': (value) => typeof value === 'boolean',
   'execution.mode': (value) => ['manual', 'automatic'].includes(value),
+};
+
+const assertPath = (path) => {
+  assert(validators.hasOwnProperty(path), `Invalid settings path ${path}`);
 };
 
 export default {
@@ -18,7 +22,7 @@ export default {
     default: defaultSettings,
   },
   mutations: {
-    saveSettings(state, settings) {
+    updateSettings(state, settings) {
       Object.entries(settings)
         .forEach(([path, value]) => {
           state.user[path] = value;
@@ -26,47 +30,41 @@ export default {
     },
   },
   actions: {
-    saveSettings({ commit }, settings) {
-      commit('saveSettings', settings);
+    updateSettings({ commit }, settings) {
+      commit('updateSettings', settings);
     },
   },
   getters: {
     /**
      * Returns true if the path is in the user settings
      */
-    hasUserSetting: (state) => (...args) => {
-      return args.map(path => state.user.hasOwnProperty(path))
+    hasUserSetting: (state) => (path) => {
+      assertPath(path);
+
+      return state.user.hasOwnProperty(path);
     },
 
     /**
-     * Returns a user setting based on a path or the default if it doesn't exist
+     * Returns a user setting based on a path or the default if the user setting is invalid.
      */
-    getUserSettingOrDefault: (state) => (...args) => {
-      return args.map(path => {
-        const result = state.user[path];
+    getValidUserSetting: (state) => (path) => {
+      assertPath(path);
 
-        assert(defaultSettings.hasOwnProperty(path), `Invalid settings path ${path}`);
+      const value = state.user[path];
 
-        return result === undefined ? defaultSettings[path] : result;
-      });
+      return validators[path](value) ? value : state.default[path];
     },
 
-    /**
-     * Retrieved the user setting unmodified
-     */
-    getUserSetting: (state) => (...args) => args.map(path => state.user[path]),
+    getUserSetting: (state) => {
+      assertPath(path);
 
-    /**
-     * If any of the settings retrieved are not valid, the default setting is returned.
-     */
-    getValidUserSetting: (state) => (...args) => {
-      return args.map(path => {
-        assert(validators.hasOwnProperty(path), `Invalid settings path ${path}`);
+      return state.user[path];
+    },
 
-        const value = _.get(state.user, path);
+    isSettingValid: (state) => (path) => {
+      assertPath(path);
 
-        return validators[path](value) ? value : state.default[path];
-      });
+      return validators[path](state.user[path]);
     },
   },
 };

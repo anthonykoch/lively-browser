@@ -112,10 +112,6 @@ export const Popup = Vue.extend({
     };
   },
 
-  mounted() {
-    console.log(this)
-  },
-
   created() {
     this.tokens = [];
   },
@@ -307,9 +303,7 @@ export default {
   },
 
   computed: {
-    isWalkthroughEnabled() {
-      return this.$store.getters.getUserSettingOrDefault('execution.walkthrough')[0];
-    },
+    //
   },
 
   async mounted() {
@@ -682,7 +676,7 @@ export default {
       const { filename, dirname } = this;
 
       const [isWalkthroughEnabled] =
-        this.$store.getters.getUserSettingOrDefault('execution.walkthrough');
+        this.$store.getters.getValidUserSetting('execution.isWalkthroughEnabled');
 
       const data = await this.transform(this.$refs.editor.getValue(), {
         filename,
