@@ -1,27 +1,12 @@
 <template>
   <div>
-    <!-- :duration="{ enter: 300, leave: 300 }" -->
-    <!-- :duration="200"
-      enter-active-class="overlay-fadeIn"
-      leave-active-class="overlay-fadeOut" -->
-
-    <transition>
-      <app-overlay
-        v-show="modals.settings.isShowing"
-        :allow-close="true"
-        @request-close="modals.settings.isShowing = false"
-      >
-        <app-modal
-          id="settings"
-          @close="modals.settings.isShowing = !modals.settings.isShowing"
-        >
-          <app-settings
-            :settings="userSettings"
-            @confirm-changes="onConfirmSettings"
-          ></app-settings>
-        </app-modal>
-      </app-overlay>
-    </transition>
+    <app-modal-settings
+      :isShowing="modals.settings.isShowing"
+      :settings="userSettings"
+      @confirm-changes="closeSettingsModal"
+      @overlay-request-close="closeSettingsModal"
+      @modal-request-close="closeSettingsModal"
+    ></app-modal-settings>
 
     <div
       v-if="section"
@@ -30,14 +15,10 @@
       <div style="width: 60%;">
         <div>
           <article class="Article">
-            <div
-              class="Article-header"
-              @click="toggleNotification('webWorkerBusy')"
-            >
+            <div class="Article-header">
               <span>Marinara</span>
             </div>
-
-            <h2 class="Article-title">{{ article.meta.title }}<span class="Article-meta">memes</span></h2>
+            <h2 class="Article-title">{{ article.meta.title }}<span class="Article-meta"> memes</span></h2>
             <div
               class="Article-body markdown markdown--styled"
               v-html="section.content"
@@ -61,7 +42,7 @@
             </button>
             <button
               class="EditorToolbar-button is-settings"
-              @click="modals.settings.isShowing = true"
+              @click="showSettingsModal"
             >
               <span class="ion ion-gear-a"></span>
             </button>
@@ -138,9 +119,10 @@ export default {
   components: {
     AppEditorSandbox: require('@/components/EditorSandbox').default,
     AppEditorNotificationList: require('@/components/EditorNotificationList').default,
-    AppModal: require('@/components/modal').default,
-    AppOverlay: require('@/components/overlay').default,
-    AppSettings: require('@/components/settings').default,
+    // AppModal: require('@/components/Modal').default,
+    // AppOverlay: require('@/components/Overlay').default,
+    // AppSettings: require('@/components/Settings').default,
+    AppModalSettings: require('@/components/ModalSettings').default,
   },
 
   data() {
@@ -245,9 +227,16 @@ export default {
   },
 
   methods: {
-    onConfirmSettings(settings) {
-      this.modals.settings.isShowing = !this.modals.settings.isShowing;
-      this.$store.dispatch('updateSettings', settings);
+    showSettingsModal() {
+      this.modals.settings.isShowing = true;
+    },
+
+    closeSettingsModal() {
+      this.modals.settings.isShowing = false;
+    },
+
+    onConfirmSettings() {
+      this.modals.settings.isShowing = false;
     },
 
     stepPreviousInWalkthrough() {

@@ -28,7 +28,7 @@
             </option>
           </select>
           <p class="Settings-description">
-            Manual mode only executes code with ctrl+enter. Automatic (currently unavailable) will execute code ever n ms after typing.
+            Manual mode only executes code with ctrl+enter. Automatic <b style="font-weight: 600">(currently unavailable)</b> will execute code every n milliseconds after typing.
           </p>
          <!--  <span class="HelpTip" v-tooltip.top-center="tooltips.helpSettingsExecutionMode">
            <span class="HelpTip-icon ion ion-help"></span>
@@ -94,6 +94,12 @@ export default {
   },
 
   methods: {
+    discardLiveSettings() {
+      this.liveSettings = {
+        ...this.$props.settings,
+      };
+    },
+
     onSettingChange(name, value) {
       this.$emit('setting-change', { name: value });
     },

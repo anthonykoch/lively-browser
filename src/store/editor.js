@@ -1,5 +1,3 @@
-import {
-} from './constants';
 
 export default {
   // namespaced: true,
@@ -9,11 +7,11 @@ var user = {
   username: 'musefan42',
 };
 
-const a = () => {
-  return user.username + 'memes';
+const getUsername = () => {
+  return \`Hello, $\{user.username}! I'm delighted to meet you\`;
 };
 
-a();
+getUsername();
 
 user;
 

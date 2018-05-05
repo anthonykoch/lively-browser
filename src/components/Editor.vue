@@ -26,7 +26,7 @@ import emmet from '@emmetio/codemirror-plugin';
 
 emmet(CodeMirror);
 
-const createCoverageMarker = (options={}) => {
+const createCoverageMarker = (options) => {
   const element = document.createElement('div');
   const isCovered = options.isCovered ? 'is-covered' : 'is-uncovered';
   const isError = options.isError ? 'is-error': '';
@@ -171,7 +171,7 @@ export default {
         for (let i = 0; i < insertions.items.length; i += 1) {
           const insertion = insertions.items[i];
           const loc = insertion.node.loc;
-          const element = createCoverageMarker({ isCovered: false, });
+          const element = createCoverageMarker({ isCovered: false });
 
           this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
         }
@@ -179,6 +179,7 @@ export default {
     },
 
     renderCovered(locStart, execId, options={}) {
+      const { isCovered=false, isError=false } = options;
       const line = locStart.line - 1;
       // const [start, end] = getSingleCharFromLoc(locStart);
       // const rangeId = createRangeId(start, end, execId);
@@ -188,8 +189,8 @@ export default {
       }
 
       const element = createCoverageMarker({
-        isCovered: true,
-        isError: options.isError,
+        isCovered,
+        isError,
       });
 
       this.cm.setGutterMarker(line, GUTTER_KEY, element);

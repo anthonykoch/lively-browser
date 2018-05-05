@@ -25,17 +25,18 @@
 </template>
 
 <script>
-import { EventEmitter } from 'events';
+import assert from 'assert';
 
-import _ from 'lodash';
 import Vue from 'vue';
+import _ from 'lodash';
 import cuid from 'cuid';
 import Keyboard from 'keyboardjs';
 
+import { PopupType } from '@/constants';
 import logger from '@/logger';
 
 const TIMEOUT_PHANTOM_HOVER_SHOW = 400;
-const TIMEOUT_PHANTOM_HOVER_HIDE = 700;
+const TIMEOUT_PHANTOM_HOVER_HIDE = 400;
 
 // type CoveredInsertionPoint = {
 //   ids: number[],
@@ -55,194 +56,7 @@ const TIMEOUT_PHANTOM_HOVER_HIDE = 700;
  * @param  {{ content: string, loc: CodeMirrorLocation }} options
  */
 
-export const Popup = Vue.extend({
-  template:
-  `
-    <div
-      class="EditorPopup"
-      :class="{ 'has-close': isCloseable }"
-      @mouseenter="onMouseEnter"
-      @mouseleave="onMouseLeave"
-    >
-      <div class="EditorPopup-content">
-        <template v-for="(section, index) in content">
-          <span
-            v-if="section.content"
-            :class="getSectionClass(section.type)"
-            class="EditorPopup-contentSection"
-          >{{ section.content }}</span>
-          <span
-            v-if="section.partials"
-            class="EditorPopup-partial"
-          >
-            <span
-              v-for="partial of section.partials"
-              :class="getSectionClass(partial.type)"
-              class="EditorPopup-contentSection is-partial"
-            >{{ partial.content }}</span>
-          </span>
-          <span v-if="index != content.length - 1" class="EditorPopup-separator"></span>
-        </template>
-      </div>
-      <button
-        class="EditorPopup-close"
-        v-show="isCloseable"
-        @click="onPopupClose"
-      >
-        <span>&times;</span>
-      </button>
-    </div>
-  `,
-
-  props: {
-    isCloseable: {
-      type: Boolean,
-      default: () => false,
-    },
-    cm: {
-      type: Object,
-      required: true,
-    },
-  },
-
-  data() {
-    return {
-      content: [],
-      isDestroyed: false,
-    };
-  },
-
-  created() {
-    this.tokens = [];
-  },
-
-  beforeDestroy() {
-    this.cancelAllHide();
-    this.cancelAllShow();
-  },
-
-  methods: {
-    onMouseEnter(e) {
-      this.$emit('popup-mouse-enter', e);
-    },
-
-    onMouseLeave(e) {
-      this.$emit('popup-mouse-leave', e);
-    },
-
-    onPopupClose() {
-      this.hide();
-    },
-
-    getSectionClass(type) {
-      return {
-        'is-info': type === 'info',
-        'is-code': type === 'code',
-      };
-    },
-
-    getPartialClass(type) {
-      return '';
-    },
-
-    show({
-      content=[],
-      delay,
-      loc,
-      scrollIntoView=true,
-      wrap=false,
-    }={}) {
-      const token = {
-        type: 'show',
-      };
-
-      token.promise =
-        new Promise((resolve) => {
-          token.id = cuid();
-          token.timeout = setTimeout(() => {
-            this.cm.addWidget({
-              line: loc.line,
-              ch: loc.column,
-            }, this.$el);
-
-            this.content = content;
-
-            this.cm.scrollIntoView({
-              line: loc.line,
-              ch: loc.column + 50,
-            }, 200);
-
-            this.removeToken([token]);
-
-            resolve();
-          }, delay);
-        });
-
-      this.addToken([token]);
-
-      return token;
-    },
-
-    hide({ delay=0 }={}) {
-      const token = {
-        type: 'hide',
-      };
-
-      token.promise =
-        new Promise((resolve) => {
-          token.id = cuid();
-          token.timeout = setTimeout(() => {
-            if (this.$el.parentNode) {
-              this.$el.parentNode.removeChild(this.$el);
-            }
-
-            this.cancelHide([token]);
-
-            resolve();
-          }, delay);
-        });
-
-      this.addToken([token]);
-
-      return token;
-    },
-
-    addToken(tokens) {
-      this.tokens = this.tokens.concat(tokens);
-    },
-
-    removeToken(tokens) {
-      this.tokens =
-        this.tokens.filter((token) => tokens.some(t => t.id === token.id));
-    },
-
-    cancelHide(tokens) {
-      tokens.forEach(token => clearTimeout(token.timeout));
-
-      this.removeToken(tokens);
-    },
-
-    cancelShow(tokens) {
-      tokens.forEach(token => clearTimeout(token.timeout));
-
-      this.removeToken(tokens);
-    },
-
-    cancelAllHide() {
-      this.cancelHide(this.tokens.filter(token => token.type === 'hide'));
-    },
-
-    cancelAllShow() {
-      this.cancelShow(this.tokens.filter(token => token.type === 'show'));
-    },
-
-    destroy() {
-      return this.hide().then(() => {
-        this.cm = null;
-      });
-    },
-  },
-});
+export const Popup = Vue.extend(require('@/components/EditorPopup').default);
 
 /**
  * @param  {Location} loc
@@ -261,9 +75,14 @@ export const toCodemirrorLoc = (loc) => ([
 
 /**
  * EditorSandbox acts as an orchestrator for the editor and sandbox.
+ *
+ * Cases:
+ *   - Don't show popups for lines that already have a walkthrough popup
+ *   - Only beautify if the line is longer than 40 or so characters
  */
 export default {
   name: 'EditorSandbox',
+  memes: 'awdawd',
 
   components: {
     AppEditor: require('@/components/Editor').default,
@@ -350,6 +169,7 @@ export default {
     });
 
     this.lastChangedLine = null;
+    this.activeExecution = null;
     this.timeouts = {};
     this.phantoms = [];
     this.transform = null;
@@ -482,18 +302,16 @@ export default {
 
     showWalkthroughStep(index) {
       if (
+          this.activeExecution?.instrumentor === 'thorough' &&
           index > -1 &&
           Number.isFinite(index) &&
           this.coverage.ids.hasOwnProperty(index)
         ) {
-        // const insertion = this.getInsertionByIndex(index);
         const insertionId = this.coverage.ids[index];
         const items = this.insertions.items;
 
         let insertion = null;
         let before = null;
-
-        // console.log(this.coverage.ids);
 
         for (let i = 0; i < items.length; i++) {
           if (items[i].id === insertionId) {
@@ -604,6 +422,9 @@ export default {
               execId,
               content: [coverage.values[index]],
               line: loc.end.line,
+              meta: {
+                popupType: PopupType.Code,
+              },
             }]);
           }
         });
@@ -644,6 +465,9 @@ export default {
             column: phantom.column,
             className: phantom.className,
             editorId: this.id,
+            meta: {
+              ...phantom.meta,
+            },
           };
         }));
 
@@ -672,15 +496,18 @@ export default {
         return;
       }
 
-      const activeExecId = this.increaseActiveExecId();
       const { filename, dirname } = this;
+      const activeExecId = this.increaseActiveExecId();
+      const input = this.$refs.editor.getValue();
 
-      const [isWalkthroughEnabled] =
-        this.$store.getters.getValidUserSetting('execution.isWalkthroughEnabled');
+      const instrumentor =
+        this.$store.getters.getValidUserSetting('execution.isWalkthroughEnabled')
+          ? 'thorough'
+          : 'minimal';
 
-      const data = await this.transform(this.$refs.editor.getValue(), {
+      const data = await this.transform(input, {
         filename,
-        instrumentor: isWalkthroughEnabled ? 'thorough' : 'minimal',
+        instrumentor,
       });
 
       const error = data.error;
@@ -690,6 +517,12 @@ export default {
       // if (data.badLoops?.length) {
       //   return this.$emit('potential-freeze', data.badLoops);
       // }
+      this.activeExecution = {
+        id: activeExecId,
+        instrumentor,
+        input,
+        compilation: data,
+      };
 
       if (error) {
         this.$emit('transform-error', { ...error, execId: activeExecId });
@@ -704,6 +537,10 @@ export default {
             line: error.loc.line,
             column: error.loc.column,
             className: 'is-error',
+            meta: {
+              popupType: PopupType.Info,
+              isError: true,
+            },
             // layout: 'inline',
           }]);
         }
@@ -768,10 +605,12 @@ export default {
 
     onEditorChanges(cm, changes) {
       const line = changes.reduce((line, change) => {
-        return (line === null || change.from.line < line) ? change.from.line : line;
-        // return line;
-      }, null);
+        if (line == null || change.from.line < line) {
+          return change.from.line;
+        }
 
+        return line;
+      }, line);
 
       if (line != null) {
         this.lastChangedLine = line + 1;
@@ -784,27 +623,22 @@ export default {
           const insertion = items[i];
 
           if (insertion.node.loc.end.line >= this.lastChangedLine) {
-            console.log('maxStep', i, this.coverage.ids[i], this.coverage.ids)
-            this.maxWalkthroughStep = i;
             break;
           }
         }
-
-        // this.resetWalkthrough();
       }
     },
 
     onPhantomMouseenter(e, phantom) {
-      const loc = this.cm.coordsChar({
-        left: e.pageX,
-        top: e.pageY,
-      }, 'window');
+      assert(phantom, 'phantom is not a phantom object');
 
-      // console.log(this.activeWalkthroughInsertionId, phantom.insertion.id)
-
-      // NOTE: Don't show popups for lines that already have a walkthrough popup
-      if (this.activeWalkthroughInsertionId !== phantom.insertion.id) {
+      if (phantom.insertion == null || this.activeWalkthroughInsertionId !== phantom.insertion.id) {
         this.popups.phantomHover.cancelAllHide();
+
+        const content =
+          phantom.content.map(value => this.beautify(value)).toString();
+
+        const { popupType: type=PopupType.Code } = phantom.meta;
 
         this.popups.phantomHover.show({
           delay: TIMEOUT_PHANTOM_HOVER_SHOW,
@@ -813,8 +647,8 @@ export default {
             column: phantom.column,
           },
           content: [{
-            type: 'code',
-            content: phantom.content.map(value => this.beautify(value)).toString(),
+            type,
+            content,
           }],
         });
       }
@@ -838,7 +672,15 @@ export default {
             line: loc.line,
             column: loc.column,
             className: 'is-error',
+            meta: {
+              popupType: PopupType.Code,
+              isError: true,
+            },
           }]);
+
+          this.$refs.editor.renderCovered(loc, execId, {
+            isError: true,
+          });
         }
 
         const message = error.message.trim();
@@ -867,8 +709,6 @@ export default {
       replies.forEach((payload) => {
         const execId = payload.execId;
 
-        // console.log('Reply:', payload.execId, this.activeExecId)
-
         // Don't render any phantoms for replies incoming from previously executed scripts
         if (execId >= this.activeExecId) {
 
@@ -881,7 +721,9 @@ export default {
             const insertion = this.insertions.items[payload.insertionId];
             const locStart = insertion.node.loc.start;
 
-            this.$refs.editor.renderCovered(locStart, execId);
+            this.$refs.editor.renderCovered(locStart, execId, {
+              isCovered: true,
+            });
           }
         }
       });

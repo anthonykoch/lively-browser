@@ -8,10 +8,10 @@
 // 3. SUIT is used for class naming cause I like the way it looks more
 //    than BEM and it basically produces the same result.
 
-@import 'variables';
 
 @import '~normalize.css';
 @import '~animate.css';
+@import 'variables';
 @import 'tooltip';
 
 *,
@@ -262,6 +262,7 @@ $marker-coverage-covered: #47e286; // green
 $marker-coverage-default: #ffffff;
 $marker-coverage-uncovered: #eeeeee;
 $marker-coverage-error: #e54545; // red
+$marker-coverage-error: $color-error; // red
 
 .CoveredBlock {
   border-bottom: 1px solid transparent;
@@ -273,6 +274,10 @@ $marker-coverage-error: #e54545; // red
 
 .CoveredBlock.is-uncovered {
   border-color: rgba($marker-coverage-uncovered, 0.5);
+}
+
+.CoveredBlock.is-error {
+  border-color: rgba($marker-coverage-error, 0.5);
 }
 
 
@@ -298,7 +303,6 @@ $marker-coverage-error: #e54545; // red
     height: 8px;
     z-index: $app-coverage-marker-layer;
   }
-
 }
 
 .CoverageMarker.is-covered {
@@ -313,97 +317,14 @@ $marker-coverage-error: #e54545; // red
   }
 }
 
-
-
-.EditorPopup {
-  background-color: $app-editor-popup-background; // rgba(245, 155, 155, 0.2);
-  border-radius: 4px;
-  box-shadow: $app-box-shadow-1;
-  display: inline-block;
-  justify-content: space-between;
-  // transform: translate(-20%, 0);
-  // transform: translateZ(0);
-  max-height: 233px;
-  max-width: 420px;
-  overflow: auto;
-  transition: 400ms opacity;
-  z-index: $app-walthrough-popup-layer;
-}
-
-.EditorPopup-contentSection {
-  display: block;
-  line-height: 1.6;
-  max-width: 100%;
-  padding: $app-editor-popup-padding-y $app-editor-popup-padding-r $app-editor-popup-padding-y $app-editor-popup-padding-l;
-
-  &.is-info {
-    background-color: rgba(black, 0.14);
-    border: 1px solid rgba(black, 0.06);
-    border-radius: 4px;
-    margin: 8px 6px;
-    white-space: normal;
-  }
-
-  &.is-code {
-    overflow: auto;
-    white-space: pre;
-  }
-
-  &.is-partial {
-    // overflow: auto;
-  }
-
-  &.is-partial:not(:last-child) {
-    border-right: 1px solid rgba(black, 0.08);
-    padding-right: $app-editor-popup-padding-r;
+.CoverageMarker.is-error {
+  &:after {
+    background-color: $marker-coverage-error;
   }
 }
 
-.EditorPopup-partial {
-  display: flex;
-}
 
-.EditorPopup-separator {
-  border-bottom: 1px solid rgba(black, 0.16);
-  display: block;
-  width: 100%;
 
-  &:before {
-    // border-bottom: 1px solid rgba(white, 0.4);
-    content: '';
-    display: block;
-    width: 100%;
-  }
-}
-
-.EditorPopup-close {
-  display: none;
-  background-color: $color-error;
-  border: 0;
-  border-radius: 0 4px 4px 0;
-  // bottom: 0;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  line-height: 24px;
-  outline: 0;
-  text-align: center;
-  // height: 22px;
-  // padding: 2px 6px;
-  // height: 20px;
-  // width: 20px;
-  // position: absolute;
-  // right: 0;
-  // top: 0;
-  user-select: none;
-  width: 22px;
-
-  > span {
-    line-height: inherit;
-    // positi
-  }
-}
 
 
 
