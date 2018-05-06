@@ -93,6 +93,28 @@ export default {
       return '';
     },
 
+    /**
+     * @example
+     *   popup.show({
+     *    content: [{
+     *        content: `This point can not be highlighted because it has been modified`,
+     *        type: 'info',
+     *      }, {
+     *        partials: [{
+     *          content: `${loc.start.line}:${loc.start.column}`,
+     *        }, {
+     *          type: 'code',
+     *          content: this.beautify(this.coverage.values[index]),
+     *        }],
+     *      },
+     *    ],
+     *    loc: {
+     *      line,
+     *      column: 0,
+     *    },
+     *  });
+     */
+
     show({
       content=[],
       delay,

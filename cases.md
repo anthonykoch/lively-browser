@@ -15,7 +15,9 @@ fetch('https://jsonplaceholder.typicode.com/users')
   .then(res => res.json())
   .then(users => {
     users[0];
-  })
+  });
+
+
 
 
 
@@ -46,5 +48,13 @@ let i = 10000000;
 
 while (i-- > 0) {
   if (i) {}
+}
+
+
+
+
+
+for (let i = 0; i < 20; i++) {
+  i;
 }
 

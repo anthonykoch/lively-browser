@@ -7,7 +7,7 @@
       url="/sandbox.html"
       @busy="onSandboxBusy"
       @free="onSandboxFree"
-      @replies="onSandboxReply"
+      @replies="onSandboxResponse"
       @done="onSandboxDone"
       @runtime-error="onSandboxRuntimeError"
     ></app-sandbox>
@@ -16,11 +16,10 @@
       :code="code"
       :phantoms="phantoms"
       :insertions="insertions"
-      :editor-events="editorEvents"
       :show-ellipses="true"
       style="font-size: 14px"
-      @phantom-mouseenter="onPhantomMouseEnter"
-      @phantom-mouseleave="onPhantomMouseLeave"
+      @phantom-group-mouseenter="onPhantomGroupMouseEnter"
+      @phantom-group-mouseleave="onPhantomGroupMouseLeave"
     >
     </app-editor>
   </div>
@@ -81,6 +80,16 @@ export const toCodemirrorLoc = (loc) => ([
  * Cases:
  *   - Don't show popups for lines that already have a walkthrough popup
  *   - Only beautify if the line is longer than 40 or so characters
+ *
+ * Emits:
+ *   sandbox-busy: When the sandbox is at 100% cpu utilization and can't respond
+ *   sandbox-free: When the sandbox is no longer busy
+ *   sandbox-response: When the sandbox sends a response
+ *   sandbox-done: When the sandbox is done synchronously executing a script
+ *   ready: Fired when the editor has loaded all its important dependencies
+ *          and is ready to execute code.
+ *   transform-error: Fires if the code has a syntax error
+ *   runtime-error: Executed when there is a synchronous runtime error
  */
 export default {
   name: 'EditorSandbox',
@@ -122,19 +131,6 @@ export default {
     };
   },
 
-  computed: {
-    editorEvents() {
-      return {
-        phantom: {
-          mouseenter: this.onPhantomMouseEnter,
-          mouseleave: this.onPhantomMouseLeave,
-          // 'click.ellipses': this.onPhantomEllipsisClick,
-          'hover.ellipsis': [this.onPhantomEllipsisClick],
-        },
-      };
-    },
-  },
-
   async mounted() {
     this.cm = this.$refs.editor.cm;
     this.cm.on('change', this.onEditorChange);
@@ -143,7 +139,7 @@ export default {
 
     window.addEventListener('click', this.onWindowClick);
 
-    this.createPopups();
+    this.popups = this.createPopups();
 
     if (this.execOnReady) {
       this.$once('ready', () => {
@@ -227,7 +223,7 @@ export default {
     },
 
     createPopups() {
-      this.popups = {
+      const popups = {
         walkthrough: new Popup({
           propsData: {
             cm: this.cm,
@@ -245,13 +241,15 @@ export default {
         }),
       };
 
-      this.popups.phantomHover.$on('popup-mouse-enter', this.onPhantomPopupEnter);
-      this.popups.phantomHover.$on('popup-mouse-leave', this.onPhantomPopupLeave);
+      popups.phantomHover.$on('popup-mouse-enter', this.onPhantomPopupEnter);
+      popups.phantomHover.$on('popup-mouse-leave', this.onPhantomPopupLeave);
 
-      Object.values(this.popups)
+      Object.values(popups)
         .forEach(popup => {
           popup.$mount();
         });
+
+      return popups;
     },
 
     keyWalkthroughNext(e) {
@@ -623,7 +621,6 @@ export default {
 
       if (line != null) {
         this.lastChangedLine = line + 1;
-        this.$refs.editor.clearBelow(line)
         this.clearPhantomsBelow(line + 1);
 
         const items = this.insertions.items;
@@ -638,12 +635,36 @@ export default {
       }
     },
 
-    onPhantomMouseEnter(e, phantom) {
-      if (phantom.insertion == null || this.activeWalkthroughInsertionId !== phantom.insertion.id) {
+    onPhantomGroupMouseEnter(e, phantoms) {
+      const phantom = phantoms.length ? phantoms[0] : null;
+
+      if (
+        phantom &&
+        phantom.insertion == null ||
+        this.activeWalkthroughInsertionId !== phantom.insertion.id
+      ) {
         this.popups.phantomHover.cancelAllHide();
 
         const content =
-          phantom.content.map(value => this.beautify(value)).toString();
+          phantoms.map((p, i) => {
+            const prefix = phantoms.length > 1 ? i : '';
+
+            const partials = [{
+              content: this.beautify(p.content.join(', ')),
+              type: 'code',
+            }];
+
+            if (phantoms.length > 1) {
+              partials.unshift({
+                content: prefix,
+                type: 'code',
+              });
+            }
+
+            return {
+              partials,
+            };
+          });
 
         const { popupType: type=PopupType.Code } = phantom.meta;
 
@@ -653,15 +674,12 @@ export default {
             line: phantom.line - 1,
             column: phantom.column,
           },
-          content: [{
-            type,
-            content,
-          }],
+          content,
         });
       }
     },
 
-    onPhantomMouseLeave(e, phantom) {
+    onPhantomGroupMouseLeave(e, phantoms) {
       this.popups.phantomHover.cancelAllShow();
       this.popups.phantomHover.hide({ delay: TIMEOUT_PHANTOM_HOVER_HIDE });
     },
@@ -703,14 +721,14 @@ export default {
     },
 
     onSandboxBusy(time) {
-      this.$emit('busy', time);
+      this.$emit('sandbox-busy', time);
     },
 
     onSandboxFree() {
-      this.$emit('free');
+      this.$emit('sandbox-free');
     },
 
-    onSandboxReply(replies) {
+    onSandboxResponse(replies) {
       // console.log('Received', replies);
 
       replies.forEach((payload) => {
@@ -734,12 +752,14 @@ export default {
           }
         }
       });
+
+      this.$emit('sandbox-response', replies)
     },
 
     onSandboxDone(payload) {
       this.eraseOutdatedPhantoms();
       this.$refs.editor.updatePhantoms(true);
-      this.$emit('done', payload);
+      this.$emit('sandbox-done', payload);
     },
   },
 };

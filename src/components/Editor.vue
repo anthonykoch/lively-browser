@@ -92,7 +92,7 @@ const createRangeId =
 
 /*
   Events:
-    phantoms - the widget node itself
+    phantom-group - the widget node itself
     phantom - an individual phantom element which is a piece of a widget
 */
 
@@ -498,7 +498,7 @@ export default {
       assert(e.currentTarget.phantoms, 'phantoms is not an array');
 
       if (e.target === e.currentTarget) {
-        this.$emit('phantom-group-${e.type}', e, e.currentTarget.phantoms);
+        this.$emit(`phantom-group-${e.type}`, e, e.currentTarget.phantoms);
       }
     },
 

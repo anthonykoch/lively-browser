@@ -80,11 +80,11 @@
             :code="code"
             :active-walkthrough-step="activeWalkthroughStep"
             style="font-size: 15px; font-family: consolas"
-            @busy="onSandboxBusy"
-            @free="onSandboxFree"
             @runtime-error="onRuntimeError"
             @transform-error="onTransformError"
-            @done="onSandboxDone"
+            @sandbox-busy="onSandboxBusy"
+            @sandbox-free="onSandboxFree"
+            @sandbox-done="onSandboxDone"
           >
           </app-editor-sandbox>
           <transition
