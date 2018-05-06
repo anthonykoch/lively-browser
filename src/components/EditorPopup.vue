@@ -67,6 +67,7 @@ export default {
   beforeDestroy() {
     this.cancelAllHide();
     this.cancelAllShow();
+    this.cm = null;
   },
 
   methods: {
@@ -87,10 +88,6 @@ export default {
         'is-info': type === PopupType.Info,
         'is-code': type === PopupType.Code,
       };
-    },
-
-    getPartialClass(type) {
-      return '';
     },
 
     /**

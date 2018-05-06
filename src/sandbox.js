@@ -99,7 +99,6 @@ const exec = async (payload, reply) => {
 
   const result = await run(payload.input, {
     track(id, hasValue, value) {
-
       if (id > 40000) {
         if (lastSent) {
           reply({ maxCoverageReached: true });
@@ -138,16 +137,6 @@ const exec = async (payload, reply) => {
   });
 
   // console.log(result?.error?.stack)
-
-  // TODO: If there are more values to serialize then do them later
-  // setTimeout(() => {
-
-  //   while (chunkSize !== 0) {
-  //     const serialized = serialize(values, lastChunkSize);
-
-  //     reply(serialized);
-  //   }
-  // }, 0);
 
   reply({
     execId,

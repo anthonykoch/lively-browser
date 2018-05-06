@@ -13,7 +13,7 @@
     ></app-sandbox>
     <app-editor
       ref="editor"
-      :code="code"
+      :value="value"
       :phantoms="phantoms"
       :insertions="insertions"
       :show-ellipses="true"
@@ -26,6 +26,7 @@
 </template>
 
 <script>
+
 import assert from 'assert';
 
 import Vue from 'vue';
@@ -90,6 +91,7 @@ export const toCodemirrorLoc = (loc) => ([
  *          and is ready to execute code.
  *   transform-error: Fires if the code has a syntax error
  *   runtime-error: Executed when there is a synchronous runtime error
+ *   before-sandbox-inject: Emits before the sandbox is sent code to execute
  */
 export default {
   name: 'EditorSandbox',
@@ -100,14 +102,14 @@ export default {
   },
 
   props: {
-    code: {
+    value: {
       required: true,
       type: String,
     },
 
-    execOnReady: {
+    shouldExecuteOnReady: {
       type: Boolean,
-      default: true,
+      default: () => false,
     },
   },
 
@@ -141,7 +143,7 @@ export default {
 
     this.popups = this.createPopups();
 
-    if (this.execOnReady) {
+    if (this.shouldExecuteOnReady) {
       this.$once('ready', () => {
         this.runScript();
       });
@@ -229,11 +231,13 @@ export default {
             cm: this.cm,
           },
         }),
+
         expressionHover: new Popup({
           propsData: {
             cm: this.cm,
           },
         }),
+
         phantomHover: new Popup({
           propsData: {
             cm: this.cm,
@@ -264,8 +268,8 @@ export default {
 
     onCursorActivity() {
       // TODO: Check to see if cursor is still in the same range?
-      // this.clearTimeout
       return;
+
       const cursor = this.cm.getCursor();
       const content = this.findExpressionAt({ line: cursor.line, column: cursor.ch });
 
@@ -276,7 +280,7 @@ export default {
           column: cursor.ch,
         },
         content: [{
-          type: 'code',
+          type: PopupType.Code,
           content: this.beautify(content),
         }],
       });
@@ -364,7 +368,7 @@ export default {
                 partials: [{
                   content: `${loc.start.line}:${loc.start.column}`,
                 }, {
-                  type: 'code',
+                  type: PopupType.Code,
                   content: this.beautify(this.coverage.values[index]),
                 }],
               },
@@ -383,7 +387,7 @@ export default {
 
           this.popups.walkthrough.show({
             content: [{
-              type: 'code',
+              type: PopupType.Code,
               content: this.beautify(this.coverage.values[index])
             }],
             loc: {
@@ -562,6 +566,8 @@ export default {
         items: data.insertions,
       });
 
+      this.$emit('before-sandbox-inject');
+
       this.$refs.sandbox.injectCode({
         input: data.code,
         execId: activeExecId,
@@ -633,6 +639,8 @@ export default {
           }
         }
       }
+
+      this.$emit('changes', changes);
     },
 
     onPhantomGroupMouseEnter(e, phantoms) {
@@ -645,19 +653,21 @@ export default {
       ) {
         this.popups.phantomHover.cancelAllHide();
 
+        const { popupType: type=PopupType.Code } = phantom.meta;
+
         const content =
           phantoms.map((p, i) => {
             const prefix = phantoms.length > 1 ? i : '';
 
             const partials = [{
               content: this.beautify(p.content.join(', ')),
-              type: 'code',
+              type,
             }];
 
             if (phantoms.length > 1) {
               partials.unshift({
                 content: prefix,
-                type: 'code',
+                type,
               });
             }
 
@@ -665,8 +675,6 @@ export default {
               partials,
             };
           });
-
-        const { popupType: type=PopupType.Code } = phantom.meta;
 
         this.popups.phantomHover.show({
           delay: TIMEOUT_PHANTOM_HOVER_SHOW,
@@ -679,7 +687,7 @@ export default {
       }
     },
 
-    onPhantomGroupMouseLeave(e, phantoms) {
+    onPhantomGroupMouseLeave() {
       this.popups.phantomHover.cancelAllShow();
       this.popups.phantomHover.hide({ delay: TIMEOUT_PHANTOM_HOVER_HIDE });
     },

@@ -4,8 +4,10 @@
 
 ## Todo
 
+- [ ] {H} See if it's possible to catch async/promise runtime errors
 - [ ] {H} Add titles to buttons
 - [ ] {H} Allow async phantoms and insertions to be rendered.
+- [ ] {H} Store editor changes in local storage
 - [ ] {H} Create gifs for how things work
 - [x] {H} Non-walkthrough should only get the first ten
 - [x] {H} Turn keybindings on/off for walkthrough when walkthrough is turned on/off
@@ -57,4 +59,3 @@
  $$): -> 1): <content>
  $ -> 0
  ```
-- See if it's possible to catch async/promise runtime errors

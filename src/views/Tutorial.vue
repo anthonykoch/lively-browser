@@ -76,11 +76,14 @@
             </transition>
           </div>
           <app-editor-sandbox
-            ref="editor"
-            :code="code"
+            ref="editorSandbox"
+            :value="editorValue"
+            :should-execute-on-ready="false"
             :active-walkthrough-step="activeWalkthroughStep"
             style="font-size: 15px; font-family: consolas"
+            @changes="onEditorSandboxChange"
             @runtime-error="onRuntimeError"
+            @before-sandbox-inject="onBeforeEditorSandboxInject"
             @transform-error="onTransformError"
             @sandbox-busy="onSandboxBusy"
             @sandbox-free="onSandboxFree"
@@ -170,7 +173,8 @@ export default {
 
   computed: {
     ...mapState({
-      code: state => state.editor.code,
+      editorValue: state => state.editor.value,
+      isExecutionDirty: state => (console.log(state.editor.execution.isDirty), state.editor.execution.isDirty),
       article: state => state.articles.article,
       articlesMeta: state => state.articles.articlesMeta,
       userSettings: state => ({ ...state.settings.user }),
@@ -211,6 +215,7 @@ export default {
   },
 
   created() {
+    this.isCodeExecuted = true;
     this.showBusyTimeoutId = null;
   },
 
@@ -240,11 +245,11 @@ export default {
     },
 
     stepPreviousInWalkthrough() {
-      this.$refs.editor.stepPreviousInWalkthrough();
+      this.$refs.editorSandbox.stepPreviousInWalkthrough();
     },
 
     stepNextInWalkthrough() {
-      this.$refs.editor.stepNextInWalkthrough();
+      this.$refs.editorSandbox.stepNextInWalkthrough();
     },
 
     toggleNotification(name) {
@@ -255,12 +260,12 @@ export default {
       if (this.isBusy) {
         this.restartSandbox();
       } else {
-        this.$refs.editor.runScript();
+        this.$refs.editorSandbox.runScript();
       }
     },
 
     restartSandbox() {
-      this.$refs.editor.$refs.sandbox.restart();
+      this.$refs.editorSandbox.$refs.sandbox.restart();
       this.notificationsById.webWorkerBusy.isShowing = false;
       // FIXME: Might run into problems here because if the sandbox restart is not synchronous
       this.isBusy = false;
@@ -304,21 +309,30 @@ export default {
 
     onSandboxDone() {
       this.error = null;
-
       clearTimeout(this.showErrorTimeoutId);
     },
 
-    closeModal(name) {
-      this.modals[name].isShowing = false;
+    onBeforeEditorSandboxInject() {
+      this.$store.dispatch('updateExecutionDirtyStatus', {
+        isDirty: false,
+      });
     },
 
-    onSettingSaveClick() {
-      this.saveSettings();
-      this.closeModal('settings');
+    onEditorSandboxChange() {
+      this.isCodeExecuted = false;
+
+      this.$store.dispatch('updateExecutionDirtyStatus', {
+        isDirty: true,
+      });
+
+      this.$store.dispatch('saveEditorValue', {
+        value: this.$refs.editorSandbox.$refs.editor.getValue(),
+      });
     },
   },
 
 };
+
 </script>
 
 <style scoped lang="scss">

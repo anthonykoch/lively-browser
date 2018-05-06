@@ -2,11 +2,11 @@
   <div class="Editor">
     <codemirror
       ref="editor"
-      :value="code"
+      :value="value"
       :options="cmOptions"
       @viewportChange="onViewportChange"
       @ready="onReady"
-      @input="onCodeChange">
+    >
     </codemirror>
   </div>
 </template>
@@ -91,9 +91,9 @@ const createRangeId =
     `${execId}>${start.line}:${start.ch},${end.line}:${end.ch}`;
 
 /*
-  Events:
-    phantom-group - the widget node itself
-    phantom - an individual phantom element which is a piece of a widget
+  Emits:
+    phantom-group-<MouseEvent.type> - Emits when a mouse event is triggered on the widget node itself
+    phantom-<MouseEvent.type> - Emits when a mouse event is triggered on na individual phantom element
 */
 
 export default {
@@ -121,7 +121,7 @@ export default {
       },
     },
 
-    code: {
+    value: {
       type: String,
       required: true,
     },
@@ -504,10 +504,6 @@ export default {
 
     onReady() {
       this.$emit('ready');
-    },
-
-    onCodeChange() {
-      this.$emit('change');
     },
 
     onViewportChange() {
