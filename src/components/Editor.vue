@@ -12,6 +12,9 @@
 </template>
 
 <script>
+
+import assert from 'assert';
+
 import CodeMirror from 'codemirror';
 import { codemirror } from 'vue-codemirror';
 import _ from 'lodash';
@@ -26,6 +29,38 @@ import emmet from '@emmetio/codemirror-plugin';
 
 emmet(CodeMirror);
 
+const eventNames = [
+  // 'abort',
+  'beforeinput',
+  'blur',
+  'click',
+  // 'compositionstart',
+  // 'compositionupdate',
+  // 'compositionend',
+  'dblclick',
+  // 'error',
+  'focus',
+  'focusin',
+  'focusout',
+  'input',
+  'keydown',
+  'keypress',
+  'keyup',
+  // 'load',
+  'mousedown',
+  'mouseenter',
+  'mouseleave',
+  // 'mousemove',
+  // 'mouseout',
+  // 'mouseover',
+  'mouseup',
+  // 'resize',
+  // 'scroll',
+  // 'select',
+  // 'unload',
+  'wheel',
+];
+
 const createCoverageMarker = (options) => {
   const element = document.createElement('div');
   const isCovered = options.isCovered ? 'is-covered' : 'is-uncovered';
@@ -37,7 +72,7 @@ const createCoverageMarker = (options) => {
   return element;
 };
 
-const GUTTER_KEY = 'CoverageGutter';
+const GUTTER_KEY_COVERAGE = 'CoverageGutter';
 
 // eslint-disable-next-line no-unused-vars
 const getSingleCharFromLoc = (simpleLoc) => {
@@ -55,8 +90,13 @@ const createRangeId =
   (start, end, execId) =>
     `${execId}>${start.line}:${start.ch},${end.line}:${end.ch}`;
 
-export default {
+/*
+  Events:
+    phantoms - the widget node itself
+    phantom - an individual phantom element which is a piece of a widget
+*/
 
+export default {
   name: 'Editor',
 
   components: {
@@ -132,7 +172,10 @@ export default {
   },
 
   beforeDestroy() {
-    this.cm = null;
+    this.clearAllWidgets();
+    this.clearAllPhantoms();
+    this.cm.clearGutter(GUTTER_KEY_COVERAGE);
+    // this.cm = null;
   },
 
   created() {
@@ -140,7 +183,6 @@ export default {
     this.phantomPool = [];
     this.widgets = [];
     this.coveredByLine = {};
-    this.widgetsByLine = {};
     this.updatePhantomsDelayed = _.debounce(this.updatePhantoms, 200, {
       trailing: true,
     });
@@ -148,19 +190,18 @@ export default {
 
   methods: {
     clearBelow(startingLine) {
-      // console.log(Object.keys(this.coveredByLine), {startingLine})
       Object.keys(this.coveredByLine)
         .forEach((key) => {
           const line = (key | 0) + 1;
 
           if (line > startingLine) {
-            this.cm.setGutterMarker(line, GUTTER_KEY, null);
+            this.cm.setGutterMarker(line, GUTTER_KEY_COVERAGE, null);
           }
         });
     },
 
     clearCoverage() {
-      return this.cm.clearGutter(GUTTER_KEY);
+      return this.cm.clearGutter(GUTTER_KEY_COVERAGE);
     },
 
     renderInitialCoverage(insertions, execId) {
@@ -173,7 +214,7 @@ export default {
           const loc = insertion.node.loc;
           const element = createCoverageMarker({ isCovered: false });
 
-          this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY, element);
+          this.cm.setGutterMarker(loc.start.line - 1, GUTTER_KEY_COVERAGE, element);
         }
       });
     },
@@ -193,12 +234,12 @@ export default {
         isError,
       });
 
-      this.cm.setGutterMarker(line, GUTTER_KEY, element);
+      this.cm.setGutterMarker(line, GUTTER_KEY_COVERAGE, element);
       this.coveredByLine[line] = true;
     },
 
-    clearPhantoms() {
-      this.phantoms = Object.freeze([]);
+    clearAllPhantoms() {
+      // this.phantoms = Object.freeze([]);
       this.hasDirtyPhantoms = false;
       this.updatePhantoms(true);
     },
@@ -224,7 +265,8 @@ export default {
     },
 
     getPhantomsInView(viewport) {
-      const phantoms = this.phantoms.filter(p => this.isPhantomInView(p.line, viewport));
+      const phantoms =
+        this.phantoms.filter(p => this.isPhantomInView(p.line, viewport));
 
       return phantoms;
     },
@@ -259,27 +301,8 @@ export default {
       this.hasDirtyPhantoms = false;
     },
 
-    onPhantomMouseenter(e) {
-      this.$emit('mouseenter-phantom', e, e.target.phantom, e.target);
-    },
-
-    onPhantomMouseleave(e) {
-      this.$emit('mouseleave-phantom', e, e.target.phantom, e.target);
-    },
-
-    onWidgetMouseenter(e) {
-      this.$emit('mouseenter-widget', e, e.target.phantoms, e.target);
-    },
-
-    onWidgetMouseleave(e) {
-      this.$emit('mouseleave-widget', e, e.target.phantoms, e.target);
-    },
-
-    renderBlockPhantoms() {
-      const viewport = this.cm.getViewport();
-      const phantomsInView = this.getPhantomsInView(viewport);
-
-      this.phantomsByLine = phantomsInView.reduce((groups, phantom) => {
+    getPhantomsByLine(phantoms) {
+      return phantoms.reduce((groups, phantom) => {
         const line = phantom.line - 1;
         let grouping = null;
 
@@ -293,62 +316,95 @@ export default {
 
         return groups;
       }, {});
+    },
 
-      this.widgetsByLine = {};
+    renderBlockPhantoms() {
+      const viewport = this.cm.getViewport();
+      const phantomsInView = this.getPhantomsInView(viewport);
+
+      this.phantomsByLine = this.getPhantomsByLine(phantomsInView);
 
       this.cm.operation(() => {
         // console.time('render-block');
 
         // Remove the old phantoms and recycle the widget phantom node
-        this.widgets.forEach((widget) => {
-          widget.clear();
+        this.clearAllWidgets();
+        this.widgets = this.createWidgets(this.phantomsByLine);
+        // console.timeEnd('render-block');
+      });
+    },
 
-          this.addElementToPool(widget.node);
-        });
+    clearAllWidgets() {
+      // Remove the old phantoms and recycle the widget phantom node
+      this.widgets.forEach((widget) => {
+        widget.clear();
+        this.removeWidgetListeners(widget.node);
+        this.addElementToPool(widget.node);
+      });
+    },
 
-        this.widgets = [];
+    addWidgetListeners(node) {
+      eventNames.forEach(name => {
+        const children = node.querySelector('.Phantom-messageList').children;
 
-        Object.entries(this.phantomsByLine)
-          .forEach(([l, phantoms]) => {
-            const line = Number(l);
+        node.addEventListener(name, this.onWidgetEvent);
 
-            const phantomElement = this.getPhantomElement({
+        for (let i = 0; i < children.length; i++) {
+          children[i].addEventListener(name, this.onPhantomEvent);
+        }
+      });
+    },
+
+    removeWidgetListeners(node) {
+      const children = node.querySelector('.Phantom-messageList').children;
+
+      eventNames.forEach(name => node.removeEventListener(name, this.onWidgetEvent));
+
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+
+        eventNames.forEach(name => node.removeEventListener(name, this.onPhantomEvent));
+        child.phantom = null;
+      }
+    },
+
+    /**
+     * Creates widgets from an object mapping lines to an array of phantom objects.
+     * @param  {Object} phantomsByLine
+     * @return {Array}
+     */
+    createWidgets(phantomsByLine) {
+      return Object.entries(phantomsByLine)
+        .reduce((widgets, [l, phantoms]) => {
+          const line = Number(l);
+
+          const phantomElement =
+            this.getPhantomElement({
               line,
               contents: phantoms,
             });
 
-            const widget =
-              this.cm.addLineWidget(line, phantomElement, {
-                coverGutter: false,
-                noHScroll: true,
-              });
+          const widget =
+            this.cm.addLineWidget(line, phantomElement, {
+              coverGutter: false,
+              noHScroll: true,
+            });
 
-            this.widgetsByLine[line] = widget;
-            this.widgets.push(widget);
+          widgets.push(widget);
 
-            widget.node.addEventListener('mouseenter', this.onWidgetMouseenter);
-            widget.node.addEventListener('mouseleave', this.onWidgetMouseleave);
-            widget.node.phantom = phantoms;
-          });
+          this.addWidgetListeners(widget.node);
 
-        // console.timeEnd('render-block');
-      });
+          widget.node.phantom = phantoms;
+
+          return widgets;
+        }, []);
     },
 
     addElementToPool(el) {
       el.phantoms = null;
 
-      const children = el.querySelector('.Phantom-messageList').children;
-
-      el.removeEventListener('mouseenter', this.onWidgetMouseenter);
-      el.removeEventListener('mouseleave', this.onWidgetMouseleave);
-
-      for (let i = 0; i < children.length; i++) {
-        const child = children[i];
-
-        child.phantom = null;
-        child.removeEventListener('mouseenter', this.onPhantomMouseenter);
-        child.removeEventListener('mouseleave', this.onPhantomMouseleave);
+      for (let i = 0; i < el.children.length; i++) {
+        el.children[i].phantom = null;
       }
 
       this.phantomPool.push(el);
@@ -364,7 +420,12 @@ export default {
       return document.createElement('div');
     },
 
-    updatePhantomElement(el, { column, line, contents: phantoms, maxPerLine=10 }) { /* eslint-disable no-param-reassign */
+    updatePhantomElement(el, {
+      column,
+      line,
+      contents: phantoms,
+      maxPerLine=10,
+    }) { /* eslint-disable no-param-reassign */
       // Reset the elements attributes in case they aren't reset wherever they are used
 
       const token = this.cm.getTokenAt({ line, ch: 0 });
@@ -376,7 +437,7 @@ export default {
       el.className = `Phantom`;
       el.style.display = 'block';
       el.innerHTML =
-        // DO NOT ADD WHITESPACE in the Phantom-indent element
+        // DO NOT ADD WHITESPACE IN THE Phantom-indent ELEMENT
         `<span class="Phantom-indent">${whitespace}</span>
         <span class="Phantom-messageList"></span>`;
 
@@ -385,13 +446,13 @@ export default {
       let hey = 0;
 
       for (let i = 0; i < phantoms.length; i += 1) {
-        if (hey > 9) {
+        if (hey > maxPerLine) {
           break;
         }
 
         const phantom = phantoms[i];
-
         const div = document.createElement('span');
+
         const { content, className='' } = phantom;
         const comma =
           phantoms.length > 1 && i != phantoms.length - 1
@@ -399,16 +460,12 @@ export default {
             : '';
 
         div.phantom = phantom;
-
         div.textContent = content.join(', ') + comma;
         // TODO: Enforce a max line length/max item length
         div.textContent = content.slice(0, 10).join(', ') + comma;
         div.className = `Phantom-messageListItem ${className}`;
 
         fragment.appendChild(div);
-
-        div.addEventListener('mouseenter', this.onPhantomMouseenter);
-        div.addEventListener('mouseleave', this.onPhantomMouseleave);
       }
 
       let messageList = el.querySelector('.Phantom-messageList');
@@ -418,8 +475,7 @@ export default {
       // NOTE: This is necessary to know which phantoms were mouseentered
       el.phantoms = phantoms;
 
-      el.addEventListener('mouseenter', this.onWidgetMouseenter);
-      el.addEventListener('mouseleave', this.onWidgetMouseleave);
+      this.addWidgetListeners(el);
 
       return el;
     },
@@ -428,6 +484,22 @@ export default {
       const div = this.getPooledElement();
 
       return this.updatePhantomElement(div, phantom);
+    },
+
+    onPhantomEvent(e) {
+      assert(e.currentTarget.phantom, 'phantom is not an object');
+
+      if (e.target === e.currentTarget) {
+        this.$emit(`phantom-${e.type}`, e, e.currentTarget.phantom);
+      }
+    },
+
+    onWidgetEvent(e) {
+      assert(e.currentTarget.phantoms, 'phantoms is not an array');
+
+      if (e.target === e.currentTarget) {
+        this.$emit('phantom-group-${e.type}', e, e.currentTarget.phantoms);
+      }
     },
 
     onReady() {

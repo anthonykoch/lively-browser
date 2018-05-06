@@ -16,9 +16,11 @@
       :code="code"
       :phantoms="phantoms"
       :insertions="insertions"
+      :editor-events="editorEvents"
+      :show-ellipses="true"
       style="font-size: 14px"
-      @mouseenter-phantom="onPhantomMouseenter"
-      @mouseleave-phantom="onPhantomMouseleave"
+      @phantom-mouseenter="onPhantomMouseEnter"
+      @phantom-mouseleave="onPhantomMouseLeave"
     >
     </app-editor>
   </div>
@@ -35,8 +37,8 @@ import Keyboard from 'keyboardjs';
 import { PopupType } from '@/constants';
 import logger from '@/logger';
 
-const TIMEOUT_PHANTOM_HOVER_SHOW = 400;
-const TIMEOUT_PHANTOM_HOVER_HIDE = 400;
+const TIMEOUT_PHANTOM_HOVER_SHOW = 300;
+const TIMEOUT_PHANTOM_HOVER_HIDE = 200;
 
 // type CoveredInsertionPoint = {
 //   ids: number[],
@@ -82,7 +84,6 @@ export const toCodemirrorLoc = (loc) => ([
  */
 export default {
   name: 'EditorSandbox',
-  memes: 'awdawd',
 
   components: {
     AppEditor: require('@/components/Editor').default,
@@ -122,7 +123,16 @@ export default {
   },
 
   computed: {
-    //
+    editorEvents() {
+      return {
+        phantom: {
+          mouseenter: this.onPhantomMouseEnter,
+          mouseleave: this.onPhantomMouseLeave,
+          // 'click.ellipses': this.onPhantomEllipsisClick,
+          'hover.ellipsis': [this.onPhantomEllipsisClick],
+        },
+      };
+    },
   },
 
   async mounted() {
@@ -311,7 +321,6 @@ export default {
         const items = this.insertions.items;
 
         let insertion = null;
-        let before = null;
 
         for (let i = 0; i < items.length; i++) {
           if (items[i].id === insertionId) {
@@ -331,8 +340,10 @@ export default {
 
         if (insertion != null) {
           if (insertion.context === 'CallExpression') {
-            // TODO: Maybe highlight call expressions as they're being run, but this would
-            //       require modifications to instrumentation.
+            // TODO: Maybe highlight call expressions as they're being run. This could
+            //       potentially be done by checking if the previous insertion is a call
+            //       expression and adding it to a stack, or it would require modifications
+            //       to the instrumentation.
           }
         }
 
@@ -362,8 +373,6 @@ export default {
             ],
             loc: {
               line,
-              // If the loc spans multiple lines, display the popup at ending column
-              // else display it at the start of the starting column
               column: 0,
             },
           });
@@ -629,9 +638,7 @@ export default {
       }
     },
 
-    onPhantomMouseenter(e, phantom) {
-      assert(phantom, 'phantom is not a phantom object');
-
+    onPhantomMouseEnter(e, phantom) {
       if (phantom.insertion == null || this.activeWalkthroughInsertionId !== phantom.insertion.id) {
         this.popups.phantomHover.cancelAllHide();
 
@@ -654,7 +661,7 @@ export default {
       }
     },
 
-    onPhantomMouseleave(e, phantom) {
+    onPhantomMouseLeave(e, phantom) {
       this.popups.phantomHover.cancelAllShow();
       this.popups.phantomHover.hide({ delay: TIMEOUT_PHANTOM_HOVER_HIDE });
     },

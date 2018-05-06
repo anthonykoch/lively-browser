@@ -6,9 +6,9 @@
 
 - [ ] {H} Create gifs for how things work
 - [ ] {H} Non-walkthrough should only get the first ten
-- [ ] {H} Turn keybindings on/off for walkthrough when walkthrough is turned on/off
-- [ ] {H} Exiting out of modal through exit button does not leave settings up to date the next time the settings are open.
-- [ ] {M} Limit phantoms to 10 items per line and show a popup for more items
+- [x] {H} Turn keybindings on/off for walkthrough when walkthrough is turned on/off
+- [x] {H} Exiting out of modal through exit button does not leave settings up to date the next time the settings are open.
+- [x] {M} Limit phantoms to 10 items per line and show a popup for more items (solved by ellipsis)
 - [ ] {M} Don't show phantom popup when walthrough is going for the same insertions
 - [x] {M} Switching from minimal to thorough setting should not step through walkthrough until the code has been executed again under thorough instrumentation.
 - [x] {M} Error coverage points
@@ -27,6 +27,7 @@
 - [ ] {L} Run script as you type
 - [ ] {L} Automatic walkthrough
 - [ ] {L} An interface for viewing all expressions
+- [ ] {L} (optimization) Stop concatenating phantom content together when the line length has reached 40-50 chars.
 
 - [x] Fix member expression notifier being undeclared
 - [x] Fix the errors not going away/clearing of old phantoms.
