@@ -4,15 +4,9 @@
 
 
 fetch('https://jsonplaceholder.typicode.com/users')
-  .then(res => {
-    res;
-
-    return res;
-  })
   .then(res => res.json())
   .then(users => {
     users[0];
-    users;
   });
 
 
