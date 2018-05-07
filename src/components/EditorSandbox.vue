@@ -418,12 +418,16 @@ export default {
       }
     },
 
-    setCoverage(coverage, execId) {
-      this.coverage = Object.freeze(coverage);
+    addCoverage(coverage, execId) {
+      this.coverage = Object.freeze({
+        ids: this.coverage.ids.concat(coverage.ids),
+        values: this.coverage.values.concat(coverage.values),
+      });
+      // console.log(this.coverage.ids.length, this.coverage.values)
 
       coverage.ids
         .forEach((id, index) => {
-          const insertion = this.insertions.items[id];;
+          const insertion = this.insertions.items[id];
 
           if (this.shouldCreatePhantom(insertion)) {
             const loc = insertion.node.loc;
@@ -439,6 +443,13 @@ export default {
             }]);
           }
         });
+    },
+
+    resetCoverage() {
+      this.coverage = Object.freeze({
+        ids: [],
+        values: [],
+      });
     },
 
     renderInitialCoverage(insertions) {
@@ -495,7 +506,8 @@ export default {
 
     shouldCreatePhantom(insertion) {
       return (
-          insertion.type === 'Identifier' && insertion.context === 'ExpressionStatement'
+          (insertion.type === 'Identifier' || insertion.type === 'ThisExpression') &&
+          insertion.context === 'ExpressionStatement'
         );
     },
 
@@ -567,6 +579,7 @@ export default {
       });
 
       this.$emit('before-sandbox-inject');
+      this.resetCoverage();
 
       this.$refs.sandbox.injectCode({
         input: data.code,
@@ -747,7 +760,7 @@ export default {
 
           // Avoid rendering phantoms for things that are redundant, link strings, numbers
           if (payload.coverage) {
-            this.setCoverage(payload.coverage, execId);
+            this.addCoverage(payload.coverage, execId);
           }
 
           if (payload.hasOwnProperty('insertionId')) {

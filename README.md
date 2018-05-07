@@ -4,6 +4,8 @@
 
 ## Todo
 
+- [ ] {H} Make sure you aren't showing walkthrough popups for insertions points that have not been run yet.
+- [ ] {H} Clear markers after a line has been modified
 - [ ] {H} See if it's possible to catch async/promise runtime errors
 - [ ] {H} Add titles to buttons
 - [ ] {H} Allow async phantoms and insertions to be rendered.

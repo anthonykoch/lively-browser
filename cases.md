@@ -5,9 +5,6 @@
 
 fetch('https://jsonplaceholder.typicode.com/users')
   .then(res => {
-    var user = 'lol';
-
-    user;
     res;
 
     return res;
