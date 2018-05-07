@@ -288,7 +288,6 @@ export default {
 
     stepPreviousInWalkthrough() {
       const step = Math.max(0, this.activeWalkthroughStep - 1);
-      // const step = Math.min(Math.max(0, this.activeWalkthroughStep - 1), this.maxWalkthroughStep);
 
       this.activeWalkthroughStep = step;
       this.showWalkthroughStep(step);
@@ -300,7 +299,6 @@ export default {
 
       if (items.length > 0) {
         const step = Math.min(items.length - 1, this.activeWalkthroughStep + 1);
-        // const step = Math.min(items.length - 1, this.activeWalkthroughStep + 1, this.maxWalkthroughStep);
 
         // console.log({step})
         this.activeWalkthroughStep = step;
@@ -352,9 +350,6 @@ export default {
         const isInsertionPastChangedLine =
           this.lastChangedLine != null && insertion.node.loc.end.line >= this.lastChangedLine + 1;
 
-        // console.log({id: insertion.id, line: insertion.node.loc.end.line, changed: this.lastChangedLine, isInsertionPastChangedLine});
-        // console.log('before', before, this.coverage.ids);
-
         if (isInsertionPastChangedLine) {
           const loc = insertion.node.loc;
           const viewport = this.cm.getViewport();
@@ -398,8 +393,6 @@ export default {
             },
           });
 
-          // console.log(loc[0].line === loc[1].line, loc[1].ch, loc[0].ch, ch)
-
           this.walkthroughMarker = this.cm.doc.markText(loc[0], loc[1], {
             className: walkthroughHighlightClass,
           });
@@ -423,7 +416,6 @@ export default {
         ids: this.coverage.ids.concat(coverage.ids),
         values: this.coverage.values.concat(coverage.values),
       });
-      // console.log(this.coverage.ids.length, this.coverage.values)
 
       coverage.ids
         .forEach((id, index) => {
@@ -537,7 +529,8 @@ export default {
 
       console.log(data.code);
 
-      // if (data.badLoops?.length) {
+      // TODO: Detect potential freezes from loops
+      // if (badLoops.length) {
       //   return this.$emit('potential-freeze', data.badLoops);
       // }
       this.activeExecution = {
@@ -641,16 +634,6 @@ export default {
       if (line != null) {
         this.lastChangedLine = line + 1;
         this.clearPhantomsBelow(line + 1);
-
-        const items = this.insertions.items;
-
-        for (let i = 0; i < items.length; i++) {
-          const insertion = items[i];
-
-          if (insertion.node.loc.end.line >= this.lastChangedLine) {
-            break;
-          }
-        }
       }
 
       this.$emit('changes', changes);

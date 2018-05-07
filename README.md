@@ -23,6 +23,7 @@
 - [x] {H} Fix undefined phantom class
 - [x] {H} Fix error where `setTimeout(() => {}, 0)` returns a number and moving the cursor to the same line causes the phantom to be erased.
 
+- [ ] {M} Add a copy button for phantom popups, or allow ctrl+a to only select what's in the phantom
 - [ ] {M} Clear walkthrough markers if it comes after a modified line.
 - [ ] {M} UI for a timeline of the walkthrough. I'm thinking a strip at the bottom or top with left/right buttons of at one side and the rest. It should only show when walkthrough is enabled and should allow viewing serialized data. Would probably add a thing so that you can go to a line through a text box instead of having to scroll or press the left/right buttons.
  ```
@@ -34,6 +35,7 @@
 - [x] {M} Switching from minimal to thorough setting should not step through walkthrough until the code has been executed again under thorough instrumentation.
 - [x] {M} Error coverage points
 
+- [ ] {L} Add loading indicator for phantoms which have yet to have their insertion point fired.
 - [ ] {L} Improve walkthrough UI buttons
 - [ ] {L} Add shadow to gutter when scrolled right
 - [ ] {L} Fix close button on popups (for right now removing them works as they're not necessary)
