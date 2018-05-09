@@ -14,11 +14,11 @@ user;
 
 `;
 
-const getByQuery = ({ id='', state: editorState=[] }, state) => {
+const getEditorByQuery = ({ id='', state: editorState=[] }, state) => {
   if (!Array.isArray(editorState)) throw new Error(`{Array<string>} state, got ${editorState}`);
   if (typeof id !== 'string') throw new Error(`{string} id, got ${id}`);
 
-  const shouldMatchByHasFocus = editorState.includes('<focused>');
+  const shouldMatchByHasFocus = editorState.includes('focused');
 
   return state.editors.find(editor => {
     const bools = [];
@@ -43,11 +43,13 @@ export default {
       {
         id: 'main-tutorial',
         value: DEFAULT_TUTORIAL_EDITOR_VALUE,
+        coverageTotalLength: 0,
         lastModifiedAt: null,
         lastExecutedAt: null,
         shouldExecute: false,
-        activeWalkthroughStepIndex: 0,
+        activeWalkthroughStepIndex: -1,
         isWalkthroughPopupShowing: false,
+        isWalkthroughMarkerShowing: false,
       }
     ],
   },
@@ -59,7 +61,13 @@ export default {
       state.editors = state.editors.map(editor => {
         return {
           ...editor,
+          activeWalkthroughStepIndex: -1,
+          coverageTotalLength: 0,
           shouldExecute: false,
+          lastModifiedAt: null,
+          lastExecutedAt: null,
+          isWalkthroughPopupShowing: false,
+          isWalkthroughMarkerShowing: false,
         }
       });
     },
@@ -71,7 +79,7 @@ export default {
         lastModifiedAt=null,
         lastExecutedAt=null,
         shouldExecute=false,
-        activeWalkthroughStepIndex=0,
+        activeWalkthroughStepIndex=-1,
         isWalkthroughPopupShowing=false,
       } = data;
 
@@ -94,6 +102,40 @@ export default {
       editor.shouldExecute = false;
     },
 
+    MARK_WALKTHROUGH_VISIBLE(state, { editor }) {
+      editor.isWalkthroughPopupShowing = true;
+      editor.isWalkthroughMarkerShowing = true;
+    },
+
+    UNMARK_WALKTHROUGH_VISIBLE(state, { editor }) {
+      editor.isWalkthroughPopupShowing = false;
+      editor.isWalkthroughMarkerShowing = false;
+    },
+
+    MARK_WALKTHROUGH_MARKER_VISIBLE(state, { editor }) {
+      editor.isWalkthroughMarkerShowing = true;
+    },
+
+    UNMARK_WALKTHROUGH_MARKER_VISIBLE(state, { editor }) {
+      editor.isWalkthroughMarkerShowing = false;
+    },
+
+    MARK_WALKTHROUGH_POPUP_VISIBLE(state, { editor }) {
+      editor.isWalkthroughPopupShowing = true;
+    },
+
+    UNMARK_WALKTHROUGH_POPUP_VISIBLE(state, { editor }) {
+      editor.isWalkthroughPopupShowing = false;
+    },
+
+    MARK_FOCUSED(state, { editor }) {
+      editor.hasFocus = true;
+    },
+
+    UNMARK_FOCUSED(state, { editor }) {
+      editor.hasFocus = false;
+    },
+
     CLEAR_WALKTHROUGH_POPUP(state, { editor }) {
       editor.isWalkthroughPopupShowing = false;
     },
@@ -103,11 +145,29 @@ export default {
     },
 
     SHOW_WALKTHROUGH_NEXT(state, { editor }) {
-      editor.walkthroughIndex += 1;
+      const step =
+        editor.coverageTotalLength === 0
+          ? -1
+          : Math.min(editor.coverageTotalLength - 1, editor.activeWalkthroughStepIndex + 1);
+
+      // console.log({step});
+
+      if (editor.coverageTotalLength > 0) {
+        editor.activeWalkthroughStepIndex = step;
+        editor.isWalkthroughPopupShowing = true;
+        editor.isWalkthroughMarkerShowing = true;
+      }
     },
 
     SHOW_WALKTHROUGH_PREVIOUS(state, { editor }) {
-      editor.walkthroughIndex -= 1;
+      const step =
+        editor.coverageTotalLength === 0
+         ? -1
+         : Math.max(0, editor.activeWalkthroughStepIndex - 1);
+
+      // console.log({step});
+
+      editor.activeWalkthroughStepIndex = step;
     },
 
     SET_VALUE(state, { editor, value }) {
@@ -122,12 +182,8 @@ export default {
       editor.lastModifiedAt = time;
     },
 
-    MARK_FOCUSED(state, { editor }) {
-      editor.hasFocus = true;
-    },
-
-    UNMARK_FOCUSED(state, { editor }) {
-      editor.hasFocus = false;
+    UPDATE_COVERAGE_TOTAL(state, { coverageTotalLength, editor }) {
+      editor.coverageTotalLength = coverageTotalLength;
     },
   },
 
@@ -141,25 +197,67 @@ export default {
     markShouldExecute($store, data) {
       const editor = $store.getters.getEditorByQuery(data.query);
 
-      $store.commit('MARK_SHOULD_EXECUTE', {
-        editor,
-      });
+      $store.commit('MARK_SHOULD_EXECUTE', { editor });
     },
 
     unmarkShouldExecute($store, data) {
       const editor = $store.getters.getEditorByQuery(data.query);
 
-      $store.commit('UNMARK_SHOULD_EXECUTE', {
-        editor,
-      });
+      $store.commit('UNMARK_SHOULD_EXECUTE', { editor });
+    },
+
+    markFocused($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('MARK_FOCUSED', { editor });
+    },
+
+    unmarkFocused($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('UNMARK_FOCUSED', { editor });
+    },
+
+    markWalkthroughVisible($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('MARK_WALKTHROUGH_VISIBLE', { editor });
+    },
+
+    unmarkWalkthroughVisible($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('UNMARK_WALKTHROUGH_VISIBLE', { editor });
+    },
+
+    markWalkthroughMarkerVisible($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('MARK_WALKTHROUGH_MARKER_VISIBLE', { editor });
+    },
+
+    unmarkWalkthroughMarkerVisible($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('UNMARK_WALKTHROUGH_MARKER_VISIBLE', { editor });
+    },
+
+    markWalkthroughPopupVisible($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('MARK_WALKTHROUGH_POPUP_VISIBLE', { editor });
+    },
+
+    unmarkWalkthroughPopupVisible($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('UNMARK_WALKTHROUGH_POPUP_VISIBLE', { editor });
     },
 
     clearWalkthroughPopup($store, data) {
       const editor = $store.getters.getEditorByQuery(data.query);
 
-      $store.commit('CLEAR_WALKTHROUGH_POPUP', {
-        editor,
-      });
+      $store.commit('CLEAR_WALKTHROUGH_POPUP', { editor });
     },
 
     setWalkthroughIndex($store, data) {
@@ -174,17 +272,13 @@ export default {
     showWalkthroughNext($store, data) {
       const editor = $store.getters.getEditorByQuery(data.query);
 
-      $store.commit('SHOW_WALKTHROUGH_NEXT', {
-        editor,
-      });
+      $store.commit('SHOW_WALKTHROUGH_NEXT', { editor });
     },
 
     showWalkthroughPrevious($store, data) {
       const editor = $store.getters.getEditorByQuery(data.query);
 
-      $store.commit('SHOW_WALKTHROUGH_PREVIOUS', {
-        editor,
-      });
+      $store.commit('SHOW_WALKTHROUGH_PREVIOUS', { editor });
     },
 
     setValue($store, data) {
@@ -193,22 +287,6 @@ export default {
       $store.commit('SET_VALUE', {
         editor,
         value: data.value,
-      });
-    },
-
-    markFocused($store, data) {
-      const editor = $store.getters.getEditorByQuery(data.query);
-
-      $store.commit('MARK_FOCUSED', {
-        editor,
-      });
-    },
-
-    unmarkFocused($store, data) {
-      const editor = $store.getters.getEditorByQuery(data.query);
-
-      $store.commit('UNMARK_FOCUSED', {
-        editor,
       });
     },
 
@@ -229,13 +307,26 @@ export default {
         time: data.time,
       });
     },
+
+    updateCoverageTotal($store, data) {
+      const editor = $store.getters.getEditorByQuery(data.query);
+
+      $store.commit('UPDATE_COVERAGE_TOTAL', {
+        editor,
+        coverageTotalLength: data.coverageTotalLength,
+      });
+    },
   },
 
   getters: {
     isEditorExecutionDirty: (state, getters) => (id) => {
       const editor = getters.editorsById[id];
 
-      return editor.lastModifiedTime > editor.lastExecutedAt;
+      return (
+          editor.lastExecutedAt == null ||
+          editor.lastModifiedTime == null ||
+          editor.lastModifiedTime > editor.lastExecutedAt
+        );
     },
 
     editorsById: (state) => {
@@ -250,7 +341,7 @@ export default {
      * @param  {String} state - Array of '<focused>'
      * @param  {Array<string>} state - Array of '<focused>'
      */
-    getEditorByQuery: (state) => (query) => getByQuery(query, state),
+    getEditorByQuery: (state) => (query) => getEditorByQuery(query, state),
 
     anyHasFocus(state) {
       return state.editors.some(editor => editor.hasFocus);

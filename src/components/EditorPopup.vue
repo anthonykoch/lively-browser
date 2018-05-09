@@ -56,6 +56,7 @@ export default {
   data() {
     return {
       content: [],
+      isShowing: false,
       isDestroyed: false,
     };
   },
@@ -141,6 +142,8 @@ export default {
 
             this.removeToken([token]);
 
+            this.isShowing = true;
+
             resolve();
           }, delay);
         });
@@ -163,7 +166,8 @@ export default {
               this.$el.parentNode.removeChild(this.$el);
             }
 
-            this.cancelHide([token]);
+            this.removeToken([token]);
+            this.isShowing = false;
 
             resolve();
           }, delay);

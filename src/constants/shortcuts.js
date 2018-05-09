@@ -9,7 +9,7 @@ export default [
     on(e, $store) {
       $store.dispatch('editors/markShouldExecute', {
         query: {
-          state: ['<focused>'],
+          state: ['focused'],
         },
       });
     },
@@ -18,9 +18,9 @@ export default [
     keys: ['esc'],
     when: (state, getters) => getters.anyEditorHasFocus,
     on(e, $store) {
-      $store.dispatch('editors/clearWalkthroughPopup', {
+      $store.dispatch('editors/unmarkWalthroughPopupVisible', {
         query: {
-          state: ['<focused>'],
+          state: ['focused'],
         },
       });
     },
@@ -31,29 +31,29 @@ export default [
       $store.dispatch('editors/setWalkthroughIndex', {
         index: 0,
         query: {
-          state: ['<focused>'],
+          state: ['focused'],
         },
       });
     },
   },
   {
     keys: ['command+shift+period', 'ctrl+n'],
-    when: (state, getters) => getters.anyEditorHasFocus,
+    when: (state, getters) => getters['editors/anyHasFocus'],
     on(e, $store) {
       $store.dispatch('editors/showWalkthroughNext', {
         query: {
-          state: ['<focused>'],
+          state: ['focused'],
         },
       });
     },
   },
   {
     keys: ['command+shift+,', 'ctrl+p'],
-    when: (state, getters) => getters.anyEditorHasFocus,
+    when: (state, getters) => getters['editors/anyHasFocus'],
     on(e, $store) {
       $store.dispatch('editors/showWalkthroughPrevious', {
         query: {
-          state: ['<focused>'],
+          state: ['focused'],
         },
       });
     },

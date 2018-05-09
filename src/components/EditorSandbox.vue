@@ -37,6 +37,8 @@ import logger from '@/logger';
 const TIMEOUT_PHANTOM_HOVER_SHOW = 300;
 const TIMEOUT_PHANTOM_HOVER_HIDE = 200;
 
+const WALKTHROUGH_HIGHLIGHT_CLASS = 'WalkthoughtStep';
+
 // type CoveredInsertionPoint = {
 //   ids: number[],
 //   values: string[],
@@ -77,6 +79,8 @@ export const toCodemirrorLoc = (loc) => ([
  *
  * Cases:
  *   - Don't show popups for lines that already have a walkthrough popup
+ *   - Don't show markers if the line has been modified past its insertion's end line
+ *   - Don't show popups if the line has been modified past its insertion's end line
  *   - Only beautify if the line is longer than 40 or so characters
  *
  * Emits:
@@ -118,9 +122,24 @@ export default {
       type: Boolean,
       default: () => false,
     },
+
+    activeWalkthroughStepIndex: {
+      type: Number,
+      default: () => -1,
+    },
+
+    isWalkthroughMarkerShowing: {
+      type: Boolean,
+      required: true,
+    },
+
+    isWalkthroughPopupShowing: {
+      type: Boolean,
+      required: true,
+    },
   },
 
-  data() {
+  data(vm) {
     return {
       insertions: {
         items: Object.freeze([]),
@@ -129,7 +148,7 @@ export default {
         ids: [],
         values: [],
       }),
-      activeWalkthroughStep: -1,
+      local_activeWalkthroughStepIndex: vm.$props.activeWalkthroughStepIndex,
       phantoms: Object.freeze([]),
       origin: cuid(),
       activeExecId: 0,
@@ -140,12 +159,22 @@ export default {
   },
 
   watch: {
-    shouldExecute(newProps, oldProps) {
-      console.log(newProps, oldProps);
-
-      if (newProps === true) {
+    shouldExecute(should) {
+      if (should === true) {
         this.runScript();
       }
+    },
+
+    activeWalkthroughStepIndex(newIndex, oldIndex) {
+      this.renderWalkthroughStep(newIndex);
+    },
+
+    isWalkthroughMarkerShowing(isShowing) {
+      this.renderWalkthroughStep(this.activeWalkthroughStepIndex);
+    },
+
+    isWalkthroughPopupShowing(isShowing) {
+      this.renderWalkthroughStep(this.activeWalkthroughStepIndex);
     },
   },
 
@@ -201,6 +230,7 @@ export default {
     this.transform = null;
     this.maxWalkthroughStep = 0;
     this.activeWalkthroughInsertionId = null;
+    this.renders = {};
 
     this.beautify = (val) => val;
   },
@@ -286,100 +316,85 @@ export default {
       });
     },
 
-    stepPreviousInWalkthrough() {
-      const step = Math.max(0, this.activeWalkthroughStep - 1);
-
-      this.activeWalkthroughStep = step;
-      this.showWalkthroughStep(step);
-      // console.log({ step })
-    },
-
-    stepNextInWalkthrough() {
-      const items = this.coverage.ids;
-
-      if (items.length > 0) {
-        const step = Math.min(items.length - 1, this.activeWalkthroughStep + 1);
-
-        // console.log({step})
-        this.activeWalkthroughStep = step;
-        this.showWalkthroughStep(step);
-      }
-    },
-
-    showFirstWalkthroughStep() {
-      this.showWalkthroughStep(0);
-    },
-
-    showWalkthroughStep(index) {
-      if (
+    canShowWalkthroughStepIndex(index) {
+      return (
           this.activeExecution?.instrumentor === 'thorough' &&
           index > -1 &&
           Number.isFinite(index) &&
           this.coverage.ids.hasOwnProperty(index)
-        ) {
-        const insertionId = this.coverage.ids[index];
-        const items = this.insertions.items;
+        );
+    },
 
-        let insertion = null;
+    isInsertionPastChangedLine(insertion) {
+      return this.lastChangedLine != null && insertion.node.loc.end.line >= this.lastChangedLine + 1;
+    },
 
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].id === insertionId) {
-            insertion = items[i];
+    getInsertionDataFromIndex(index, shouldStopAtChangedLine=true) {
+      const insertionId = this.coverage.ids[index];
+      const items = this.insertions.items;
 
-            if (this.lastChangedLine != null && insertion.node.loc.end.line >= this.lastChangedLine + 1) {
-              break;
-            }
+      let insertion = null;
+      let i = 0;
 
+      for (; i < items.length; i++) {
+        if (items[i].id === insertionId) {
+          insertion = items[i];
+
+          if (
+            shouldStopAtChangedLine &&
+            this.lastChangedLine != null &&
+            insertion.node.loc.end.line >= this.lastChangedLine + 1
+          ) {
             break;
           }
+
+          break;
         }
+      }
 
-        if (this.walkthroughMarker) {
-          this.walkthroughMarker.clear();
-        }
+      return {
+        fromIndex: index,
+        insertion,
+        foundIndex: insertion == null ? null : i,
+      };
+    },
 
-        if (insertion != null) {
-          if (insertion.context === 'CallExpression') {
-            // TODO: Maybe highlight call expressions as they're being run. This could
-            //       potentially be done by checking if the previous insertion is a call
-            //       expression and adding it to a stack, or it would require modifications
-            //       to the instrumentation.
-          }
-        }
+    /**
+     * @param  {Object|null} insertion
+     */
+    showWalkthroughPopup(insertion) {
+      const index = this.activeWalkthroughStepIndex;
 
-        const isInsertionPastChangedLine =
-          this.lastChangedLine != null && insertion.node.loc.end.line >= this.lastChangedLine + 1;
+      if (this.isInsertionPastChangedLine(insertion)) {
+        const loc = insertion.node.loc;
+        const viewport = this.cm.getViewport();
+        const line = viewport.from;
 
-        if (isInsertionPastChangedLine) {
-          const loc = insertion.node.loc;
-          const viewport = this.cm.getViewport();
-          const line = viewport.from;
-
-          this.popups.walkthrough.show({
-            content: [{
-                content: `This point can not be highlighted because it has been modified`,
-                type: 'info',
+        this.popups.walkthrough.show({
+          content: [{
+              content: `This point can not be highlighted because it has been modified`,
+              type: 'info',
+            }, {
+              partials: [{
+                content: `${loc.start.line}:${loc.start.column}`,
               }, {
-                partials: [{
-                  content: `${loc.start.line}:${loc.start.column}`,
-                }, {
-                  type: PopupType.Code,
-                  content: this.beautify(this.coverage.values[index]),
-                }],
-              },
-            ],
-            loc: {
-              line,
-              column: 0,
+                type: PopupType.Code,
+                content: this.beautify(this.coverage.values[index]),
+              }],
             },
-          });
-        } else if (insertion) {
-          const loc = toCodemirrorLoc(insertion.node.loc);
-          const walkthroughHighlightClass = 'WalkthoughtStep';
-          const ch = ((loc[0].line === loc[1].line) ? loc[0].ch : loc[1].ch - 1);
+          ],
+          loc: {
+            line,
+            column: 0,
+          },
+        });
+      } else {
+        const loc = toCodemirrorLoc(insertion.node.loc);
+        const ch = ((loc[0].line === loc[1].line) ? loc[0].ch : loc[1].ch - 1);
 
-          this.activeWalkthroughInsertionId = insertion.id;
+        this.activeWalkthroughInsertionId = insertion.id;
 
+        if (this.isWalkthroughPopupShowing) {
           this.popups.walkthrough.show({
             content: [{
               type: PopupType.Code,
@@ -392,18 +407,60 @@ export default {
               column: ch,
             },
           });
-
-          this.walkthroughMarker = this.cm.doc.markText(loc[0], loc[1], {
-            className: walkthroughHighlightClass,
-          });
         }
       }
     },
 
-    resetWalkthrough() {
-      this.activeWalkthroughStep = -1;
-      this.activeWalkthroughInsertionId = null;
+    showWalkthroughMarker(insertion) {
+      const loc = toCodemirrorLoc(insertion.node.loc);
 
+      this.hideWalkthroughMarker();
+
+      if (this.isInsertionPastChangedLine(insertion)) {
+        return;
+      }
+
+      this.walkthroughMarker = this.cm.doc.markText(loc[0], loc[1], {
+        className: WALKTHROUGH_HIGHLIGHT_CLASS,
+      });
+    },
+
+    renderWalkthroughStep() {
+      const index = this.activeWalkthroughStepIndex;
+      const canShow = this.canShowWalkthroughStepIndex(index);
+
+      if (!canShow) {
+        return null;
+      }
+
+      const { insertion } = this.getInsertionDataFromIndex(index);
+
+      if (insertion == null) {
+        return null;
+      }
+
+      if (this.isWalkthroughMarkerShowing) {
+        this.showWalkthroughMarker(insertion);
+      } else {
+        this.hideWalkthroughMarker();
+      }
+
+      if (this.isWalkthroughPopupShowing) {
+        this.showWalkthroughPopup(insertion);
+      } else {
+        this.hideWalkthroughPopup();
+      }
+
+      // TODO: Maybe highlight call expressions as they're being run. This could
+      //       potentially be done by checking if the previous insertion is a call
+      //       expression and adding it to a stack, or it would require modifications
+      //       to the instrumentation.
+
+      return insertion;
+    },
+
+    hideWalkthrough() {
+      this.activeWalkthroughInsertionId = null;
       this.popups.walkthrough.hide();
 
       if (this.walkthroughMarker) {
@@ -411,11 +468,26 @@ export default {
       }
     },
 
+    hideWalkthroughPopup() {
+      this.popups.walkthrough.cancelAllShow();
+      this.popups.walkthrough.hide();
+    },
+
+    hideWalkthroughMarker() {
+      if (this.walkthroughMarker) {
+        this.walkthroughMarker.clear();
+      }
+    },
+
     addCoverage(coverage, execId) {
+      const oldCoverage = this.coverage;
+
       this.coverage = Object.freeze({
         ids: this.coverage.ids.concat(coverage.ids),
         values: this.coverage.values.concat(coverage.values),
       });
+
+      this.$emit('coverage', this.coverage, coverage, oldCoverage);
 
       coverage.ids
         .forEach((id, index) => {
@@ -504,7 +576,6 @@ export default {
     },
 
     async runScript() {
-      this.resetWalkthrough();
       this.lastChangedLine = null;
 
       if (this.transform == null) {

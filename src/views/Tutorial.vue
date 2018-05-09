@@ -78,12 +78,15 @@
           <app-editor-sandbox
             ref="editorSandbox"
             v-if="editor != null"
+            :is-walkthrough-marker-showing="editor.isWalkthroughMarkerShowing"
+            :is-walkthrough-popup-showing="editor.isWalkthroughPopupShowing"
             :editor-id="editor.id"
             :value="editor.value"
             :should-execute-on-ready="editor.shouldExecuteOnReady"
             :should-execute="editor.shouldExecute"
-            :active-walkthrough-step="editor.activeWalkthroughStepIndex"
+            :active-walkthrough-step-index="editor.activeWalkthroughStepIndex"
             style="font-size: 15px; font-family: consolas"
+            @coverage="onEditorSandboxCoverageChange"
             @focus="onEditorSandboxFocus"
             @blur="onEditorSandboxBlur"
             @changes="onEditorSandboxChange"
@@ -249,11 +252,19 @@ export default {
     },
 
     stepPreviousInWalkthrough() {
-      this.$refs.editorSandbox.stepPreviousInWalkthrough();
+      this.$store.dispatch('editors/showWalkthroughPrevious', {
+        query: {
+          id: this.editor.id,
+        },
+      });
     },
 
     stepNextInWalkthrough() {
-      this.$refs.editorSandbox.stepNextInWalkthrough();
+      this.$store.dispatch('editors/showWalkthroughNext', {
+        query: {
+          id: this.editor.id,
+        },
+      });
     },
 
     toggleNotification(name) {
@@ -316,6 +327,15 @@ export default {
       clearTimeout(this.showErrorTimeoutId);
     },
 
+    onEditorSandboxCoverageChange(allCoverage) {
+      this.$store.dispatch('editors/updateCoverageTotal', {
+        coverageTotalLength: allCoverage.ids.length,
+        query: {
+          id: this.editor.id,
+        },
+      });
+    },
+
     onEditorSandboxFocus() {
       this.$store.dispatch('editors/markFocused', {
         query: {
@@ -341,6 +361,12 @@ export default {
       });
 
       this.$store.dispatch('editors/unmarkShouldExecute', {
+        query: {
+          id: this.editor.id,
+        },
+      });
+
+      this.$store.dispatch('editors/unmarkWalkthroughVisible', {
         query: {
           id: this.editor.id,
         },
