@@ -5,8 +5,25 @@
 </template>
 
 <script>
+
+import shortcuts from '@/constants/shortcuts';
+import { bindShortcuts, unbindShortcuts } from '@/keyboard';
+
 export default {
-  name: 'app',
+  name: 'App',
+
+  created() {
+    this.boundShortcuts = bindShortcuts({
+      $store: this.$store,
+      shortcuts,
+    });
+  },
+
+  destroyed() {
+    unbindShortcuts({
+      boundShortcuts: this.boundShortcuts,
+    });
+  },
 };
 </script>
 

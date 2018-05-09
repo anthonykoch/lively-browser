@@ -23,11 +23,15 @@ Vue.component('v-popover', VPopover);
 
 Vue.config.productionTip = false;
 
-const store = new Vuex.Store(storeDefinitions);
+const $store = new Vuex.Store(storeDefinitions);
 
-// store.subscribe(function(mutation, state) {
-//   console.log('Store change', mutation)
-// });
+console.log($store);
+
+$store.subscribe(function(mutation, state) {
+  console.log('Store change', mutation)
+});
+
+$store.dispatch('editors/bootstrap');
 
 /* eslint-disable no-new */
 new Vue({
@@ -36,6 +40,6 @@ new Vue({
     App,
   },
   router,
-  store,
+  store: $store,
   template: '<App/>',
 });

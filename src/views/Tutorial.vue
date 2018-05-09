@@ -77,10 +77,15 @@
           </div>
           <app-editor-sandbox
             ref="editorSandbox"
-            :value="editorValue"
-            :should-execute-on-ready="false"
-            :active-walkthrough-step="activeWalkthroughStep"
+            v-if="editor != null"
+            :editor-id="editor.id"
+            :value="editor.value"
+            :should-execute-on-ready="editor.shouldExecuteOnReady"
+            :should-execute="editor.shouldExecute"
+            :active-walkthrough-step="editor.activeWalkthroughStepIndex"
             style="font-size: 15px; font-family: consolas"
+            @focus="onEditorSandboxFocus"
+            @blur="onEditorSandboxBlur"
             @changes="onEditorSandboxChange"
             @runtime-error="onRuntimeError"
             @before-sandbox-inject="onBeforeEditorSandboxInject"
@@ -130,6 +135,12 @@ export default {
 
   data() {
     return {
+      activeWalkthroughStep: 0,
+      isBusy: false,
+      error: null,
+      errorExecId: null,
+      console,
+
       tooltips: {
         helpSettingsExecutionMode: {
           content: 'Manual mode only executes code with ctrl+enter. Automatic will execute code ever n ms after typing',
@@ -140,16 +151,12 @@ export default {
           // show: true,
         },
       },
+
       modals: {
         settings: {
           isShowing: false,
         },
       },
-
-      activeWalkthroughStep: 0,
-      isBusy: false,
-      error: null,
-      errorExecId: null,
 
       notificationsById: {
         webWorkerBusy: {
@@ -166,15 +173,12 @@ export default {
         //   actions: [],
         // },
       },
-
-      console,
     };
   },
 
   computed: {
     ...mapState({
-      editorValue: state => state.editor.value,
-      isExecutionDirty: state => (console.log(state.editor.execution.isDirty), state.editor.execution.isDirty),
+      editor: (state, getters) => getters['editors/editorsById']['main-tutorial'],
       article: state => state.articles.article,
       articlesMeta: state => state.articles.articlesMeta,
       userSettings: state => ({ ...state.settings.user }),
@@ -312,25 +316,55 @@ export default {
       clearTimeout(this.showErrorTimeoutId);
     },
 
+    onEditorSandboxFocus() {
+      this.$store.dispatch('editors/markFocused', {
+        query: {
+          id: this.editor.id,
+        },
+      });
+    },
+
+    onEditorSandboxBlur() {
+      this.$store.dispatch('editors/unmarkFocused', {
+        query: {
+          id: this.editor.id,
+        },
+      });
+    },
+
     onBeforeEditorSandboxInject() {
-      this.$store.dispatch('updateExecutionDirtyStatus', {
-        isDirty: false,
+      this.$store.dispatch('editors/updateLastExecutedTime', {
+        time: Date.now(),
+        query: {
+          id: this.editor.id,
+        },
+      });
+
+      this.$store.dispatch('editors/unmarkShouldExecute', {
+        query: {
+          id: this.editor.id,
+        },
       });
     },
 
     onEditorSandboxChange() {
       this.isCodeExecuted = false;
 
-      this.$store.dispatch('updateExecutionDirtyStatus', {
-        isDirty: true,
+      this.$store.dispatch('editors/updateLastModifiedTime', {
+        time: Date.now(),
+        query: {
+          id: this.editor.id,
+        },
       });
 
-      this.$store.dispatch('saveEditorValue', {
+      this.$store.dispatch('editors/setValue', {
         value: this.$refs.editorSandbox.$refs.editor.getValue(),
+        query: {
+          id: this.editor.id,
+        },
       });
     },
   },
-
 };
 
 </script>

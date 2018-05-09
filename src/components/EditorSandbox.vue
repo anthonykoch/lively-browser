@@ -27,12 +27,9 @@
 
 <script>
 
-import assert from 'assert';
-
 import Vue from 'vue';
 import _ from 'lodash';
 import cuid from 'cuid';
-import Keyboard from 'keyboardjs';
 
 import { PopupType } from '@/constants';
 import logger from '@/logger';
@@ -102,9 +99,19 @@ export default {
   },
 
   props: {
+    editorId: {
+      type: String,
+      required: true,
+    },
+
     value: {
       required: true,
       type: String,
+    },
+
+    shouldExecute: {
+      type: Boolean,
+      required: true,
     },
 
     shouldExecuteOnReady: {
@@ -125,7 +132,6 @@ export default {
       activeWalkthroughStep: -1,
       phantoms: Object.freeze([]),
       origin: cuid(),
-      id: cuid(),
       activeExecId: 0,
       filename: '/lively.js',
       dirname: '/',
@@ -133,11 +139,23 @@ export default {
     };
   },
 
+  watch: {
+    shouldExecute(newProps, oldProps) {
+      console.log(newProps, oldProps);
+
+      if (newProps === true) {
+        this.runScript();
+      }
+    },
+  },
+
   async mounted() {
     this.cm = this.$refs.editor.cm;
     this.cm.on('change', this.onEditorChange);
     this.cm.on('changes', this.onEditorChanges);
     this.cm.on('cursorActivity', this.onCursorActivity);
+    this.cm.on('focus', this.onEditorFocus);
+    this.cm.on('blur', this.onEditorBlur);
 
     window.addEventListener('click', this.onWindowClick);
 
@@ -183,29 +201,11 @@ export default {
     this.transform = null;
     this.maxWalkthroughStep = 0;
     this.activeWalkthroughInsertionId = null;
-    this.keymap = new Map([
-      ['esc', this.resetWalkthrough],
-      ['ctrl+shift+0', this.showFirstWalkthroughStep],
-      ['ctrl+enter', this.runScript],
-      ['command+alt+enter', this.runScript],
-      ['ctrl+n', this.keyWalkthroughNext],
-      ['command+shift+period', this.keyWalkthroughNext],
-      ['ctrl+p', this.keyWalkthroughPrevious],
-      ['command+shift+,', this.keyWalkthroughPrevious],
-    ]);
-
-    Array.from(this.keymap)
-      .forEach(([key, handler]) => {
-        Keyboard.bind(key, handler);
-      });
 
     this.beautify = (val) => val;
   },
 
   beforeDestroy() {
-    Array.from(this.keymap)
-      .forEach(([key, handler]) => Keyboard.off(key, handler));
-
     this.cm.off('changes', this.onEditorChanges)
     this.cm.off('change', this.onEditorChange);
     this.cm = null;
@@ -478,7 +478,7 @@ export default {
             line: phantom.line,
             column: phantom.column,
             className: phantom.className,
-            editorId: this.id,
+            editorId: this.editorId,
             meta: {
               ...phantom.meta,
             },
@@ -637,6 +637,14 @@ export default {
       }
 
       this.$emit('changes', changes);
+    },
+
+    onEditorFocus() {
+      this.$emit('focus');
+    },
+
+    onEditorBlur() {
+      this.$emit('blur');
     },
 
     onPhantomGroupMouseEnter(e, phantoms) {
