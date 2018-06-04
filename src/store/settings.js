@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 const defaultSettings = {
-  'execution.isWalkthroughEnabled': false,
+  'execution.isWalkthroughEnabled': true,
   'execution.mode': 'manual',
 };
 

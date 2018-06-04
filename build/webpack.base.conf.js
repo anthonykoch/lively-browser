@@ -1,7 +1,7 @@
 'use strict'
 const path = require('path')
 const utils = require('./utils')
-const config = require('../config')
+const config = require('../config/index.js')
 const vueLoaderConfig = require('./vue-loader.conf')
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
@@ -37,6 +37,7 @@ module.exports = {
     alias: {
       'vue$': 'vue/dist/vue.esm.js',
       '@': resolve('src'),
+      'assets': resolve('src/assets'),
     }
   },
   module: {

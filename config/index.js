@@ -6,7 +6,6 @@ const path = require('path')
 
 module.exports = {
   dev: {
-
     // Paths
     assetsSubDirectory: 'assets',
     assetsPublicPath: '/',
@@ -50,7 +49,7 @@ module.exports = {
     // Paths
     assetsRoot: path.resolve(__dirname, '../dist'),
     assetsSubDirectory: 'assets',
-    assetsPublicPath: '/',
+    assetsPublicPath: '/vue-scuffka/',
 
     /**
      * Source Maps

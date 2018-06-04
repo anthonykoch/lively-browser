@@ -14,7 +14,7 @@
 
         <video
           class="Hero-image"
-          src="/assets/videos/howitworks2.mp4"
+          src="~assets/videos/howitworks2.mp4"
           autoplay=""
           loop=""
           width="720"
@@ -22,7 +22,7 @@
       </figure>
 
       <img
-        src="../assets/images/icon.logo.vue.svg"
+        src="~assets/images/icon.logo.vue.svg"
         alt=""
         width="260px"
         class="vuelogo"

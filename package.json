@@ -5,7 +5,8 @@
   "author": "anthonykoch <anthonykoch@users.noreply.github.com>",
   "private": true,
   "scripts": {
-    "deploy": "npm run build && gh-pages -d dist",
+    "clean": "rm -rf dist",
+    "deploy": "npm run clean && npm run build && gh-pages -d dist",
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "npm run dev",
     "unit": "jest --config test/unit/jest.conf.js --coverage",

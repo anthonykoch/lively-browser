@@ -1,7 +1,7 @@
 <template>
   <div class="SiteHeader">
     <div>
-      <a :to="{ name: 'home' }" class="Logo">vue-scuffka</a>
+      <router-link :to="{ name: 'home' }" class="Logo">vue-scuffka</router-link>
     </div>
     <div>
       <a

@@ -2,6 +2,10 @@
 
 # Lively browser example
 
+## Try it
+
+https://anthonykoch.com/vue-scuffka/
+
 ## Todo
 
 - [x] {H} Make sure you aren't showing walkthrough popups for insertions points that have not been run yet.
