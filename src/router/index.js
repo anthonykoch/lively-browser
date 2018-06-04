@@ -7,14 +7,15 @@ Vue.use(Router);
 
 export default new Router({
   mode: 'history',
+  base: 'vue-scuffka',
   routes: [
     {
-      path: '/vue-scuffka',
+      path: '/',
       name: 'home',
       component: Home,
     },
     {
-      path: '/vue-scuffka/editor',
+      path: '/editor',
       name: 'editor',
       component: Editor,
     },
