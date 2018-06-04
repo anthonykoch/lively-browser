@@ -1,30 +1,131 @@
 <template>
   <div>
-    <router-link :to="{ name: 'tutorial', params: { slug: 'how-objects-and-properties-work' } }">
-      Tutorial
-    </router-link>
+    <app-site-header></app-site-header>
+
+    <div class="Hero">
+      <figure>
+        <figcaption class="Hero-description">
+          Scuffka allows you to execute Javascript and see what each expression resolves to and which expressions resolve first.
+        </figcaption>
+
+        <div class="Hero-action">
+          <router-link :to="{ name: 'editor' }" class="Button">Try it</router-link>
+        </div>
+
+        <video
+          class="Hero-image"
+          src="/assets/videos/howitworks2.mp4"
+          autoplay=""
+          loop=""
+          width="720"
+        ></video>
+      </figure>
+
+      <img
+        src="../assets/images/icon.logo.vue.svg"
+        alt=""
+        width="260px"
+        class="vuelogo"
+      >
+    </div>
   </div>
 </template>
 
 <script>
-
 export default {
-  name: 'Home',
+  components: {
+    AppSiteHeader: require('@/components/SiteHeader').default,
+    // AppModal: require('@/components/Modal').default,
+    // AppOverlay: require('@/components/Overlay').default,
+  },
+
   data() {
     return {
-      console,
+      //
     };
   },
-  methods: {
-    //
-  },
-  components: {
-    //
-  },
 };
+
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+
+.vuelogo {
+  display: none;
+  margin: 2rem auto;
+  width: 260px;
+
+}
+
+.Hero {
+  margin-top: 3rem;
+}
+
+.Hero-title {
+  letter-spacing: 1px;
+  letter-spacing: 0.25px;
+  font-size: 40px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  // max-width: 960px;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  margin-top: 4rem;
+  padding-bottom: 1.5rem;
+  text-align: center;
+}
+
+.Hero-subtitle {
+  color: #9bc2d8;
+  font-size: 14px;
+}
+
+.Hero-description {
+  line-height: 1.8;
+  margin-bottom: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 600px;
+  text-align: center;
+}
+
+.Hero-image {
+  border-radius: 4px;
+  box-shadow: 0 8px 40px -1px rgba(0,0,0,0.5);
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 640px;
+  margin-bottom: 1rem;
+}
+
+.Hero-action {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+
+
+
+.Button {
+  background-color: transparent;
+  background-color: rgba(black, 0.1);
+  border: 0;
+  box-shadow: none;
+  color: rgba(black, 0.7);
+  cursor: pointer;
+  // box-shadow: 0 2px 4px 0 rgba(black, 0.2);
+  font-family: $app-button-font-family;
+  border-radius: 3px;
+  font-size: 12px;
+  outline: 0;
+  padding: 18px 28px;
+  max-width: 100%;
+  min-width: 260px;
+  text-transform: uppercase;
+  transition-duration: 300ms;
+  transition-property: box-shadow;
+}
+
 
 </style>

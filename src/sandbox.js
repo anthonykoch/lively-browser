@@ -195,8 +195,13 @@ self.addEventListener('message', async ({ data: message }) => {
   }
 });
 
-self.addEventListener('error', () => {
-  // console.log('apwokdawpd');
+self.addEventListener('error', (e) => {
+  console.log('uncaughterror', e);
+});
+
+
+self.addEventListener('uncaughtRejection', (e) => {
+  console.log('uncaughtreject', e);
 });
 
 postMessage({ sandboxReady: true });

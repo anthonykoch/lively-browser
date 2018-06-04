@@ -4,12 +4,12 @@
 
 ## Todo
 
-- [ ] {H} Make sure you aren't showing walkthrough popups for insertions points that have not been run yet.
+- [x] {H} Make sure you aren't showing walkthrough popups for insertions points that have not been run yet.
 - [ ] {H} See if it's possible to catch async/promise runtime errors
 - [ ] {H} Add titles to buttons
 - [x] {H} Allow async phantoms and insertions to be rendered.
 - [x] {H} Store editor changes in local storage
-- [ ] {H} Create gifs for how things work
+- [x] {H} Create gifs for how things work
 - [x] {H} Non-walkthrough should only get the first ten
 - [x] {H} Turn keybindings on/off for walkthrough when walkthrough is turned on/off
 - [x] {H} Walkthrough should not stop after 10 insertion points

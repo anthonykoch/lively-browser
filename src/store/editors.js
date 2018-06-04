@@ -1,5 +1,6 @@
 
 const DEFAULT_TUTORIAL_EDITOR_VALUE = `
+
 var user = {
   username: 'musefan42',
 };
@@ -8,9 +9,9 @@ const getUsername = () => {
   return \`Hello, $\{user.username}! I'm delighted to meet you\`;
 };
 
-getUsername();
+const username = getUsername();
 
-user;
+username;
 
 `;
 

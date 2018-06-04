@@ -35,7 +35,6 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.vue', '.json'],
     alias: {
-      lively: path.join(__dirname, '../../src'),
       'vue$': 'vue/dist/vue.esm.js',
       '@': resolve('src'),
     }

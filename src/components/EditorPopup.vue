@@ -39,7 +39,7 @@
 
 import cuid from 'cuid';
 
-import { PopupType } from '@/constants';
+import { PopupType } from '@/constants/popups';
 
 export default {
   props: {
@@ -213,14 +213,14 @@ export default {
       });
     },
   },
-}
+};
 
 </script>
 
 <style lang="scss">
 
 .EditorPopup {
-  background-color: $app-editor-popup-background; // rgba(245, 155, 155, 0.2);
+  background-color: $app-editor-popup-background;
   border-radius: 4px;
   box-shadow: $app-box-shadow-1;
   display: inline-block;

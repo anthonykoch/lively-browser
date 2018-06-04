@@ -15,7 +15,10 @@ import App from './App';
 import router from './router';
 import storeDefinitions from './store';
 
+import Shortcuts from '@/plugins/shortcuts';
+
 Vue.use(Vuex);
+Vue.use(Shortcuts);
 
 Vue.directive('tooltip', VTooltip);
 Vue.directive('close-popover', VClosePopover);

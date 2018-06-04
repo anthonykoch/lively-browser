@@ -31,7 +31,7 @@ import Vue from 'vue';
 import _ from 'lodash';
 import cuid from 'cuid';
 
-import { PopupType } from '@/constants';
+import { PopupType } from '@/constants/popups';
 import logger from '@/logger';
 
 const TIMEOUT_PHANTOM_HOVER_SHOW = 300;
@@ -625,7 +625,7 @@ export default {
             column: error.loc.column,
             className: 'is-error',
             meta: {
-              popupType: PopupType.Info,
+              popupType: PopupType.Code,
               isError: true,
             },
             // layout: 'inline',

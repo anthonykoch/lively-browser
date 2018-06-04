@@ -7,21 +7,21 @@
 <script>
 
 import shortcuts from '@/constants/shortcuts';
-import { bindShortcuts, unbindShortcuts } from '@/keyboard';
+import Vue from 'vue';
 
 export default {
   name: 'App',
 
   created() {
-    this.boundShortcuts = bindShortcuts({
+    this.shortcuts = Vue.setShortcuts({
       $store: this.$store,
       shortcuts,
     });
   },
 
   destroyed() {
-    unbindShortcuts({
-      boundShortcuts: this.boundShortcuts,
+    const remaining = Vue.unsetShortcuts({
+      shortcuts: this.shortcuts,
     });
   },
 };

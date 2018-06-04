@@ -30,7 +30,7 @@ html {
 
 body {
   font-family: $app-text-font-family;
-  min-height: 100vh;
+  line-height: $app-text-line-height;
 }
 
 #{$app-headings} {
@@ -82,8 +82,6 @@ pre {
   h6 {
     font-family: $app-heading-font-family;
     font-weight: 400;
-    padding-left: $app-article-padding;
-    padding-right: $app-article-padding;
   }
 
   > h2 {
@@ -114,41 +112,12 @@ pre {
   > p {
     font-family: $app-text-font-family;
     font-size: $app-text-font-size;
-    padding-left: $app-article-padding;
-    padding-right: $app-article-padding;
+    padding-left: $app-post-padding;
+    padding-right: $app-post-padding;
   }
 }
 
 
-
-
-.button {
-  background-color: transparent;
-  border: 0;
-  cursor: pointer;
-  display: inline-block;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  user-select: none;
-}
-
-.button--default {
-  border: 1px solid rgba(black, 0.2);
-  border-radius: 3px;
-  padding: 12px 20px;
-  letter-spacing: 1px;
-  min-width: 100px;
-  text-transform: uppercase;
-}
-
-.button--rounded {
-  border-radius: 200px;
-}
-
-.button + .button {
-  margin-left: 12px;
-}
 
 
 
@@ -165,6 +134,16 @@ pre {
 
 .CodeMirror-linenumbers {
   // width: 50px;
+}
+
+.CodeMirror-gutters,
+.CodeMirror-gutters * {
+  border-radius: 4px 0 0 4px;
+}
+
+.CodeMirror {
+  border-radius: 0 4px 4px 0;
+  border-radius: 4px;
 }
 
 .CodeMirror {
@@ -209,7 +188,7 @@ pre {
 
 
 /**
- * 1. Needs ot match .CodeMirror pre left padding value
+ * 1. Needs to match .CodeMirror pre left padding value
  */
 
 .Phantom {
@@ -332,7 +311,7 @@ $marker-coverage-error: $color-error; // red
 
 
 .EditorToolbar {
-  position: fixed;
+  position: absolute;
   display: flex;
   flex-direction: column;
   top: 16px;
@@ -386,6 +365,32 @@ $marker-coverage-error: $color-error; // red
 
 .EditorToolbar-button.is-walkthrough {
   background-color: rgba(245, 155, 155, 0.2);
+}
+
+
+
+
+
+.memehelp {
+  background-color: #333;
+  border-radius: 100%;
+  color: #ddd;
+  display: inline-block;
+  height: 14px;
+  line-height: 14px;
+  text-align: center;
+  padding-right: 3px;
+  // vertical-align: top;
+  position: relative;
+  width: 14px;
+
+  &:before {
+    font-size: 10px;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
 }
 
 

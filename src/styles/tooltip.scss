@@ -107,15 +107,16 @@
 
 // The code below this point are custom overrides
 
-.tooltip .tooltip-inner {
+.tooltip.popover .popover-inner {
   background-color: $app-tooltip-background;
   border: 1px solid $app-tooltip-border-color;
   border-radius: $app-tooltip-border-radius;
-  box-shadow: $app-tooltip-box-shadow;
+  // box-shadow: $app-tooltip-box-shadow;
   line-height: $app-tooltip-line-height;
   color: $app-tooltip-foreground;
   font-size: $app-tooltip-font-size;
-  padding: $app-tooltip-padding-y $app-tooltip-padding-x;
+  // padding: $app-tooltip-padding-y $app-tooltip-padding-x;
+  padding: 0;
 }
 
 .tooltip.is-medium-size {
@@ -125,3 +126,22 @@
 .tooltip .tooltip-arrow {
   border-color: $app-tooltip-border-color;
 }
+
+
+
+
+
+.Memes {
+  padding: 3px 8px;
+}
+
+
+
+
+.Separator {
+  border: 0;
+  border-top: 1px solid rgba(black, 0.14);
+}
+
+
+
