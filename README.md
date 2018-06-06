@@ -4,7 +4,7 @@
 
 ## Try it
 
-https://anthonykoch.com/vue-scuffka/
+anthonykoch.com/vue-scuffka/
 
 ## Todo
 
