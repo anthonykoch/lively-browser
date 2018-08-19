@@ -21,7 +21,7 @@ import _ from 'lodash';
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/keymap/sublime';
-import 'codemirror/theme/monokai.css';
+import 'codemirror/theme/material.css';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/comment/comment';
 
@@ -135,7 +135,7 @@ export default {
         gutters: ['CodeMirror-linenumbers', 'CoverageGutter'],
 
         autoCloseBrackets: true,
-        theme: 'monokai',
+        theme: 'material',
         keyMap: 'sublime',
         lineNumbers: true,
         matchBrackets: true,
