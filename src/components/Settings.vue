@@ -30,9 +30,6 @@
           <p class="Settings-description">
             Manual mode only executes code with ctrl+enter. Automatic <b style="font-weight: 600">(currently unavailable)</b> will execute code every n milliseconds after typing.
           </p>
-         <!--  <span class="HelpTip" v-tooltip.top-center="tooltips.helpSettingsExecutionMode">
-           <span class="HelpTip-icon ion ion-help"></span>
-         </span> -->
         </div>
         <div class="Settings-group">
           <label
@@ -48,16 +45,6 @@
             @change="onSettingChange('execution.isWalkthroughEnabled', $refs.isWalkthroughEnabled.value)"
           >
           <span class="Settings-subtitle">(Slower when checked)</span>
-          <!-- <select
-            id="execution"
-            name="execution"
-            class="Settings-select"
-            v-model="userSettings['execution.walkthrough']"
-            @change="updateSettings('execution.mode', '')"
-          >
-            <option value="minimal">Normal (faster)</option>
-            <option value="thorough">Walkthrough (slower)</option>
-          </select> -->
           <p class="Settings-description">
             Normal execution will execute the code, give coverage feedback, and will render values for identifier expressions. Walkthrough will do all of that, but also allows a walkthrough of how the expressions resolved.
           </p>
@@ -138,7 +125,6 @@ export default {
 }
 
 .Settings-content {
-  // box-shadow: 3px 6px 20px 0px rgba(0,0,0,0.2);
   max-height: 500px;
   overflow: auto;
   position: relative;

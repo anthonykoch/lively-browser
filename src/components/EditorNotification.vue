@@ -99,13 +99,9 @@ export default {
   background-color: #ef276d;
   background-color: #e8b92c;
   background-color: transparent;
-  // background-color: #f29100;
-  // box-shadow: 0 2px 4px 0 rgba(black, 0.15);
-  // border: 1px solid transparent;
   border: 1px solid rgba(black, 0.6);
   border-radius: 3px;
   font-family: inherit;
-  // color: white;
   color: rgba(black, 0.82);
   cursor: pointer;
   font-size: 12px;
@@ -119,7 +115,6 @@ export default {
   &:hover {
     background-color: rgba(black, 0.82);
     color: white;
-    // box-shadow: 0 7px 10px 0 rgba(black, 0.2);
   }
 }
 

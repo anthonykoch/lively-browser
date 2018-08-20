@@ -12,13 +12,17 @@
           <router-link :to="{ name: 'editor' }" class="Button">Try it</router-link>
         </div>
 
-        <video
-          class="Hero-image"
-          src="~assets/videos/howitworks2.mp4"
-          autoplay=""
-          loop=""
-          width="720"
-        ></video>
+        <div
+          class="IntroVideo"
+        >
+          <video
+            class="IntroVideo-video"
+            src="~assets/videos/howitworks2.mp4"
+            controls
+            width="720"
+            @click="togglePlayState"
+          ></video>
+        </div>
       </figure>
 
       <img
@@ -35,14 +39,18 @@
 export default {
   components: {
     AppSiteHeader: require('@/components/SiteHeader').default,
-    // AppModal: require('@/components/Modal').default,
-    // AppOverlay: require('@/components/Overlay').default,
   },
 
   data() {
     return {
       //
     };
+  },
+
+  methods: {
+    togglePlayState() {
+
+    },
   },
 };
 
@@ -89,14 +97,19 @@ export default {
   text-align: center;
 }
 
-.Hero-image {
-  border-radius: 4px;
-  box-shadow: 0 8px 40px -1px rgba(0,0,0,0.5);
+.IntroVideo {
   display: block;
   margin-left: auto;
   margin-right: auto;
-  max-width: 640px;
+  max-width: 720px;
   margin-bottom: 1rem;
+}
+
+.IntroVideo-video {
+  box-shadow: 0 8px 40px -1px rgba(0,0,0,0.5);
+  border-radius: 4px;
+  display: block;
+  max-width: 100%;
 }
 
 .Hero-action {

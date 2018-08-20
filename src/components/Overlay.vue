@@ -48,7 +48,6 @@ export default {
 <style lang="scss">
 
 .Overlay {
-  // background-color: rgba(black, 0.2);
   height: 100%;
   left: 0;
   position: fixed;

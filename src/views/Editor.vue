@@ -109,7 +109,6 @@
 <script>
 import { mapState, mapGetters } from 'vuex';
 
-import { LOAD_ARTICLE_REQUEST } from '@/store/constants';
 import * as shortcuts from '@/constants/shortcuts';
 
 export default {
@@ -119,9 +118,6 @@ export default {
     AppEditorSandbox: require('@/components/EditorSandbox').default,
     AppEditorNotificationList: require('@/components/EditorNotificationList').default,
     AppSiteHeader: require('@/components/SiteHeader').default,
-    // AppModal: require('@/components/Modal').default,
-    // AppOverlay: require('@/components/Overlay').default,
-    // AppSettings: require('@/components/Settings').default,
     AppModalSettings: require('@/components/ModalSettings').default,
   },
 
@@ -136,15 +132,6 @@ export default {
       console,
 
       tooltips: {
-        // helpSettingsExecutionMode: {
-        //   content: 'Manual mode only executes code with ctrl+enter. Automatic will execute code ever n ms after typing',
-        //   classes: ['is-medium-size'],
-        //   autoHide: false,
-        //   // open: true,
-        //   offset: 10,
-        //   // show: true,
-        // },
-
         executeCode: {
           placement: 'left-middle',
           autoHide: false,
@@ -176,10 +163,6 @@ export default {
       // article: state => state.articles.article,
       // articlesMeta: state => state.articles.articlesMeta,
       userSettings: state => ({ ...state.settings.user }),
-    }),
-
-    ...mapGetters({
-
     }),
 
     ...mapGetters([
@@ -228,14 +211,6 @@ export default {
   beforeDestroy() {
     this.cancelBusyMessage();
   },
-
-  // beforeRouteEnter(to, from, next) {
-  //   next(async (vm) => {
-  //     const slug = to.params.slug;
-
-  //     await vm.$store.dispatch(LOAD_ARTICLE_REQUEST, slug);
-  //   });
-  // },
 
   methods: {
     showSettingsModal() {

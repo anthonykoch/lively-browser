@@ -90,11 +90,13 @@ const createRangeId =
   (start, end, execId) =>
     `${execId}>${start.line}:${start.ch},${end.line}:${end.ch}`;
 
-/*
-  Emits:
-    phantom-group-<MouseEvent.type> - Emits when a mouse event is triggered on the widget node itself
-    phantom-<MouseEvent.type> - Emits when a mouse event is triggered on na individual phantom element
-*/
+/**
+ * Emits:
+ *   phantom-group-<MouseEvent.type> - Emits when a mouse event is triggered
+ *   on the widget node itself
+ *   phantom-<MouseEvent.type> - Emits when a mouse event is triggered on
+ *   an individual phantom element
+ */
 
 export default {
   name: 'Editor',
@@ -139,7 +141,6 @@ export default {
         keyMap: 'sublime',
         lineNumbers: true,
         matchBrackets: true,
-        // lineWrapping: true,
         viewportMargin: 15,
         showCursorWhenSelecting: true,
         styleActiveLine: true,
@@ -175,7 +176,6 @@ export default {
     this.clearAllWidgets();
     this.clearAllPhantoms();
     this.cm.clearGutter(GUTTER_KEY_COVERAGE);
-    // this.cm = null;
   },
 
   created() {
@@ -222,8 +222,6 @@ export default {
     renderCovered(locStart, execId, options={}) {
       const { isCovered=false, isError=false } = options;
       const line = locStart.line - 1;
-      // const [start, end] = getSingleCharFromLoc(locStart);
-      // const rangeId = createRangeId(start, end, execId);
 
       if (this.coveredByLine[line]) {
         return;
@@ -239,7 +237,6 @@ export default {
     },
 
     clearAllPhantoms() {
-      // this.phantoms = Object.freeze([]);
       this.hasDirtyPhantoms = false;
       this.updatePhantoms(true);
     },
@@ -274,8 +271,8 @@ export default {
     /**
      * Returns true if the line is being rendered on the screen.
      *
-     * Note: It's important to note that the line index starts from 1. Also, a line may be
-     *       rendered but not necessarily visible on screen.
+     * Note: It's important to note that the line index starts from 1. Also, a
+     *       line may be rendered but not necessarily visible on screen.
      *
      * @param  {Number}  _line         - The line index (starting from 1)
      * @param  {Number}  viewport.from
