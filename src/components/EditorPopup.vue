@@ -1,38 +1,46 @@
 <template>
   <div
-      class="EditorPopup"
-      :class="{ 'has-close': isCloseable }"
-      @mouseenter="onMouseEnter"
-      @mouseleave="onMouseLeave"
-    >
-      <div class="EditorPopup-content">
-        <template v-for="(section, index) in content">
+    :class="{ 'has-close': isCloseable }"
+    class="EditorPopup"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
+  >
+    <div class="EditorPopup-content">
+      <template v-for="(section, index) in content">
+        <span
+          v-if="section.content"
+          :key="'content-' + index"
+          :class="getSectionClass(section.type)"
+          class="EditorPopup-contentSection"
+        >{{ section.content }}</span>
+        <span
+          v-if="section.partials"
+          :key="'partials-' + index"
+          class="EditorPopup-partial"
+        >
           <span
-            v-if="section.content"
-            :class="getSectionClass(section.type)"
-            class="EditorPopup-contentSection"
-          >{{ section.content }}</span>
-          <span
-            v-if="section.partials"
-            class="EditorPopup-partial"
-          >
-            <span
-              v-for="partial of section.partials"
-              :class="getSectionClass(partial.type)"
-              class="EditorPopup-contentSection is-partial"
-            >{{ partial.content }}</span>
-          </span>
-          <span v-if="index != content.length - 1" class="EditorPopup-separator"></span>
-        </template>
-      </div>
-      <button
-        class="EditorPopup-close"
-        v-show="isCloseable"
-        @click="onPopupClose"
-      >
-        <span>&times;</span>
-      </button>
+            v-for="(partial, partialIndex) of section.partials"
+            :key="partialIndex"
+            :class="getSectionClass(partial.type)"
+            class="EditorPopup-contentSection is-partial"
+          >{{ partial.content }}</span>
+        </span>
+        <span
+          v-if="index != content.length - 1"
+          :key="'separator-' + index"
+          class="EditorPopup-separator"
+        >
+        </span>
+      </template>
     </div>
+    <button
+      v-show="isCloseable"
+      class="EditorPopup-close"
+      @click="onPopupClose"
+    >
+      <span>&times;</span>
+    </button>
+  </div>
 </template>
 
 <script>
@@ -113,12 +121,11 @@ export default {
      *  });
      */
 
+    // TODO: scrollIntoView=true,
     show({
       content=[],
       delay,
       loc,
-      scrollIntoView=true,
-      wrap=false,
     }={}) {
       const token = {
         type: 'show',
@@ -225,8 +232,6 @@ export default {
   box-shadow: $app-box-shadow-1;
   display: inline-block;
   justify-content: space-between;
-  // transform: translate(-20%, 0);
-  // transform: translateZ(0);
   max-height: 233px;
   max-width: 420px;
   overflow: auto;
@@ -253,10 +258,6 @@ export default {
     white-space: pre;
   }
 
-  &.is-partial {
-    // overflow: auto;
-  }
-
   &.is-partial:not(:last-child) {
     border-right: 1px solid rgba(black, 0.08);
     padding-right: $app-editor-popup-padding-r;
@@ -273,7 +274,6 @@ export default {
   width: 100%;
 
   &:before {
-    // border-bottom: 1px solid rgba(white, 0.4);
     content: '';
     display: block;
     width: 100%;
@@ -285,7 +285,6 @@ export default {
   background-color: $color-error;
   border: 0;
   border-radius: 0 4px 4px 0;
-  // bottom: 0;
   color: white;
   cursor: pointer;
   font-size: 14px;
@@ -293,19 +292,11 @@ export default {
   line-height: 24px;
   outline: 0;
   text-align: center;
-  // height: 22px;
-  // padding: 2px 6px;
-  // height: 20px;
-  // width: 20px;
-  // position: absolute;
-  // right: 0;
-  // top: 0;
   user-select: none;
   width: 22px;
 
   > span {
     line-height: inherit;
-    // positi
   }
 }
 
