@@ -132,10 +132,6 @@ pre {
   padding-bottom: 300px;
 }
 
-.CodeMirror-linenumbers {
-  // width: 50px;
-}
-
 .CodeMirror-gutters,
 .CodeMirror-gutters * {
   border-radius: 4px 0 0 4px;
@@ -178,8 +174,8 @@ pre {
 
 
 .WalkthoughtStep {
-  // TODO: Figure out if it's possible to use a border that doesn't get split up
   background-color: rgba(#d8cc6d, 0.2);
+  // TODO: Figure out if it's possible to use a border that doesn't get split up
   // outline: 1px solid #d8cc6d;
 }
 
@@ -219,11 +215,6 @@ pre {
   border-bottom: 1px solid transparent;
 }
 
-.Phantom-messageListItem {
-  // background-color: rgba(226, 217, 217, 0.5);
-  // color: rgba(black, 0.6);
-}
-
 .Phantom-messageListItem:nth-child(n+2) {
   margin-left: 2px;
 }
@@ -258,6 +249,8 @@ $marker-coverage-error: $color-error; // red
 .CoveredBlock.is-error {
   border-color: rgba($marker-coverage-error, 0.5);
 }
+
+
 
 
 
@@ -306,10 +299,6 @@ $marker-coverage-error: $color-error; // red
 
 
 
-
-
-
-
 .EditorToolbar {
   position: absolute;
   display: flex;
@@ -321,13 +310,13 @@ $marker-coverage-error: $color-error; // red
 
 .EditorToolbar-button {
   @include button;
-  border-radius: 3px;
+  border-radius: 100%;
   box-shadow: 0 8px 22px -3px rgba(black, 0.5);
   color: white;
   font-size: 10px;
-  height: 38px;
+  height: 42px;
   padding: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
   position: relative;
   text-shadow: 0 1px 1px rgba(0,0,0,0.2);
   width: 42px;
@@ -346,7 +335,7 @@ $marker-coverage-error: $color-error; // red
 
   &.is-busy {
     background-color: $color-error;
-    // hsla(11, 100%, 64%, 1);
+    // FIXME: change color to hsla(11, 100%, 64%, 1); ?
   }
 
   > span {
@@ -362,35 +351,6 @@ $marker-coverage-error: $color-error; // red
   }
 }
 
-
 .EditorToolbar-button.is-walkthrough {
   background-color: rgba(245, 155, 155, 0.2);
 }
-
-
-
-
-
-.memehelp {
-  background-color: #333;
-  border-radius: 100%;
-  color: #ddd;
-  display: inline-block;
-  height: 14px;
-  line-height: 14px;
-  text-align: center;
-  padding-right: 3px;
-  // vertical-align: top;
-  position: relative;
-  width: 14px;
-
-  &:before {
-    font-size: 10px;
-    left: 50%;
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
-}
-
-
