@@ -4,7 +4,6 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue';
 import Vuex from 'vuex';
-import { VTooltip, VPopover, VClosePopover } from 'v-tooltip';
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/monokai.css';
@@ -20,21 +19,18 @@ import Shortcuts from '@/plugins/shortcuts';
 Vue.use(Vuex);
 Vue.use(Shortcuts);
 
-Vue.directive('tooltip', VTooltip);
-Vue.directive('close-popover', VClosePopover);
-Vue.component('v-popover', VPopover);
-
 Vue.config.productionTip = false;
 
 const $store = new Vuex.Store(storeDefinitions);
 
-console.log($store);
+console.log('Store', $store);
 
 $store.subscribe(function(mutation, state) {
   console.log('Store change', mutation)
 });
 
 $store.dispatch('editors/bootstrap');
+$store.dispatch('tutorials/bootstrap');
 
 /* eslint-disable no-new */
 new Vue({

@@ -1,7 +1,7 @@
 <template>
   <div>
     <app-modal-settings
-      :isShowing="modals.settings.isShowing"
+      :is-showing="modals.settings.isShowing"
       :settings="userSettings"
       @confirm-changes="closeSettingsModal"
       @overlay-request-close="closeSettingsModal"
@@ -12,21 +12,49 @@
 
     <div>
       <div class="EditorPanel">
-        <app-editor-notification-list :items="notifications"></app-editor-notification-list>
+        <app-notification-list :items="editorNotifications"></app-notification-list>
+
         <div class="EditorToolbar">
-          <button
-            :class="{ 'is-busy': isBusy }"
-            :title="titles.play"
-            class="EditorToolbar-button is-run"
-            @click="toggleScript"
-            @mouseenter="tooltips.executeCode.open = true"
-            @mouseleave="tooltips.executeCode.open = false"
+          <app-popper
+            :options="{
+              placement: 'left',
+              positionFixed: true,
+            }"
+            :transition="{ name: 'tr-Notification' }"
           >
-            <span
-              :class="{ 'ion-play': !isBusy, 'ion-stop': isBusy }"
-              class="ion"
-            ></span>
-          </button>
+            <!-- FIXME: I can not for the life of me figure out why Popper doesn't position correctly. Hacking it with inline styling -->
+            <app-notification
+              v-show="tutorialNotifications.intro1.isShowing"
+              :key="1"
+              size="small"
+              style="position: relative; left: -15px; top: 8px"
+            >
+              {{ tutorialNotifications.intro1.message }}
+            </app-notification>
+            <app-notification
+              v-show="tutorialNotifications.intro2.isShowing"
+              :key="2"
+              :actions="[{ id: 1, text: 'ok' }]"
+              :message="tutorialNotifications.intro2.message"
+              size="small"
+              style="position: relative; left: -15px; top: 44px"
+              @action="onIntroductionTutorialStep2Accept"
+            >
+            </app-notification>
+
+            <button
+              slot="reference"
+              :class="{ 'is-busy': isBusy }"
+              :title="titles.play"
+              class="EditorToolbar-button is-run"
+              @click="onPlay"
+            >
+              <span
+                :class="{ 'ion-play': !isBusy, 'ion-stop': isBusy }"
+                class="ion"
+              ></span>
+            </button>
+          </app-popper>
           <button
             :title="titles.settings"
             class="EditorToolbar-button is-settings"
@@ -34,40 +62,67 @@
           >
             <span class="ion ion-gear-a"></span>
           </button>
+
           <transition
             :duration="300"
-            name="lol2"
             enter-class="animated fadeIn"
             leave-class="animated fadeOut"
           >
             <button
-              :title="titles.walkthroughPrevious"
               v-show="$store.getters.getValidUserSetting('execution.isWalkthroughEnabled')"
+              :title="titles.walkthroughPrevious"
               class="EditorToolbar-button is-walkthrough is-walkthrough-previous"
               @click="stepPreviousInWalkthrough()"
             >
               <span class="ion ion-chevron-left"></span>
             </button>
           </transition>
+
           <transition
             :duration="300"
-            name="lol"
             enter-active-class="animated fadeIn"
             leave-active-class="animated fadeOut"
           >
-            <button
+            <div
               v-show="$store.getters.getValidUserSetting('execution.isWalkthroughEnabled')"
-              :title="titles.walkthroughNext"
-              class="EditorToolbar-button is-walkthrough is-walkthrough-next"
-              @click="stepNextInWalkthrough()"
             >
-              <span class="ion ion-chevron-right"></span>
-            </button>
+              <app-popper
+                :options="{
+                  placement: 'left',
+                  positionFixed: true,
+                }"
+                :transition="{ name: 'tr-Notification' }"
+              >
+                <!--
+                  FIXME: I can not for the life of me figure out why Popper doesn't position correctly.
+                  Hacking it with inline styling
+                 -->
+                <app-notification
+                  v-show="tutorialNotifications.intro3.isShowing"
+                  :key="1"
+                  :actions="[{ id: 1, text: 'ok' }]"
+                  :message="tutorialNotifications.intro3.message"
+                  size="small"
+                  style="position: relative; left: -15px; top: 22px"
+                  @action="onIntroductionTutorialStep3Accept"
+                >
+                </app-notification>
+                <button
+                  slot="reference"
+                  :title="titles.walkthroughNext"
+                  class="EditorToolbar-button is-walkthrough is-walkthrough-next"
+                  @click="stepNextInWalkthrough"
+                >
+                  <span class="ion ion-chevron-right"></span>
+                </button>
+              </app-popper>
+            </div>
           </transition>
         </div>
+
         <app-editor-sandbox
-          ref="editorSandbox"
           v-if="editor != null"
+          ref="editorSandbox"
           :is-walkthrough-marker-showing="editor.isWalkthroughMarkerShowing"
           :is-walkthrough-popup-showing="editor.isWalkthroughPopupShowing"
           :editor-id="editor.id"
@@ -110,15 +165,22 @@
 import { mapState, mapGetters } from 'vuex';
 
 import * as shortcuts from '@/constants/shortcuts';
+import * as NOTIFICATIONS from '@/constants/notifications';
+import * as TUTORIALS from '@/constants/tutorials';
+import * as EDITORS from '@/constants/editors';
+
+import { wait } from '@/utils';
 
 export default {
   name: 'Tutorial',
 
   components: {
     AppEditorSandbox: require('@/components/EditorSandbox').default,
-    AppEditorNotificationList: require('@/components/EditorNotificationList').default,
+    AppNotificationList: require('@/components/NotificationList').default,
+    AppNotification: require('@/components/Notification').default,
     AppSiteHeader: require('@/components/SiteHeader').default,
     AppModalSettings: require('@/components/ModalSettings').default,
+    AppPopper: require('@/components/Popper').default,
   },
 
   data() {
@@ -131,27 +193,9 @@ export default {
       errorExecId: null,
       console,
 
-      tooltips: {
-        executeCode: {
-          placement: 'left-middle',
-          autoHide: false,
-          open: true,
-          offset: 10,
-        },
-      },
-
       modals: {
         settings: {
           isShowing: false,
-        },
-      },
-
-      notificationsById: {
-        webWorkerBusy: {
-          title: '',
-          isShowing: false,
-          message: 'The web worker running your code seems to be hanging. To terminate the web worker, press the stop button. Otherwise, be careful and watch your CPU usage!',
-          actions: [],
         },
       },
     };
@@ -159,10 +203,15 @@ export default {
 
   computed: {
     ...mapState({
-      editor: (state, getters) => getters['editors/editorsById']['main-tutorial'],
-      // article: state => state.articles.article,
-      // articlesMeta: state => state.articles.articlesMeta,
+      editor: (state, getters) => getters['editors/editorsById'][EDITORS.ID_MAIN],
       userSettings: state => ({ ...state.settings.user }),
+      tutorial: state => state.tutorial,
+      editorNotifications: (state, getters) => getters['notifications/getEditorNotifications'],
+      tutorialNotifications: (state, getters) => ({
+        intro1: getters['notifications/getById'](NOTIFICATIONS.INTRODUCTION_1),
+        intro2: getters['notifications/getById'](NOTIFICATIONS.INTRODUCTION_2),
+        intro3: getters['notifications/getById'](NOTIFICATIONS.INTRODUCTION_3),
+      }),
     }),
 
     ...mapGetters([
@@ -177,15 +226,6 @@ export default {
           play: shortcuts.EDITORS_EXECUTE_CODE,
         })
       };
-    },
-
-    notifications() {
-      return Object.entries(this.notificationsById)
-        .map(([key, item]) => {
-          item.id = key;
-
-          return item;
-        }).filter((item) => item.isShowing);
     },
 
     errorLocation() {
@@ -203,6 +243,14 @@ export default {
     },
   },
 
+  mounted() {
+    this.introTutorialTimeout = setTimeout(() => {
+      this.$store.dispatch('tutorials/begin', {
+        id: TUTORIALS.INTRODUCTION,
+      });
+    }, 2000);
+  },
+
   created() {
     this.isCodeExecuted = true;
     this.showBusyTimeoutId = null;
@@ -213,6 +261,48 @@ export default {
   },
 
   methods: {
+    onPlay() {
+      clearTimeout(this.introTutorialTimeout);
+      this.toggleScript();
+
+      this.$store.dispatch('tutorials/finish', {
+        id: TUTORIALS.INTRODUCTION,
+        index: 0,
+      });
+
+      wait(1200).then(() => {
+        this.$store.dispatch('tutorials/start', {
+          id: TUTORIALS.INTRODUCTION,
+          index: 1,
+        });
+      });
+    },
+
+    onIntroductionTutorialStep2Accept() {
+      this.$store.dispatch('tutorials/finish', {
+        id: TUTORIALS.INTRODUCTION,
+        index: 1,
+      })
+      .then(() => wait(1200))
+      .then(() => {
+        this.$store.dispatch('tutorials/start', {
+          id: TUTORIALS.INTRODUCTION,
+          index: 2,
+        });
+      });
+    },
+
+    onIntroductionTutorialStep3Accept() {
+      wait(200).then(() => {
+        console.log('meme');
+
+        this.$store.dispatch('tutorials/finish', {
+          id: TUTORIALS.INTRODUCTION,
+          index: 2,
+        });
+      });
+    },
+
     showSettingsModal() {
       this.modals.settings.isShowing = true;
     },
@@ -241,10 +331,6 @@ export default {
       });
     },
 
-    toggleNotification(name) {
-      this.notificationsById[name].isShowing = !this.notificationsById[name].isShowing;
-    },
-
     toggleScript() {
       if (this.isBusy) {
         this.restartSandbox();
@@ -255,7 +341,7 @@ export default {
 
     restartSandbox() {
       this.$refs.editorSandbox.$refs.sandbox.restart();
-      this.notificationsById.webWorkerBusy.isShowing = false;
+      this.$store.dispatch('notifications/show', NOTIFICATIONS.WEB_WORKER_BUSY);
       // FIXME: Might run into problems here because if the sandbox restart is not synchronous
       this.isBusy = false;
       this.cancelBusyMessage();
@@ -263,7 +349,7 @@ export default {
 
     showBusyMessage() {
       this.showBusyTimeoutId = setTimeout(() => {
-        this.notificationsById.webWorkerBusy.isShowing = true;
+        this.$store.dispatch('notifications/show', NOTIFICATIONS.WEB_WORKER_BUSY);
         this.isBusy = true;
       }, 3000);
     },
@@ -279,7 +365,10 @@ export default {
     onSandboxFree() {
       this.cancelBusyMessage();
       this.isBusy = false;
-      this.notificationsById.webWorkerBusy.isShowing = false;
+      this.$store.dispatch(
+        'notifications/hide',
+        NOTIFICATIONS.WEB_WORKER_BUSY,
+      );
     },
 
     onRuntimeError(error) {
@@ -346,7 +435,7 @@ export default {
         },
       });
 
-      this.$store.dispatch('editors/unmarkWalkthroughVisible', {
+      this.$store.dispatch('editors/unmarkWalkthroughPopupVisible', {
         query: {
           id: this.editor.id,
         },
@@ -399,18 +488,6 @@ export default {
 
 
 
-
-// #e8e7e0 // gray green
-// #eaaa5d // orange
-
-
-
-
-// $color-brand-2: hsla(120, 85%, 68%, 1); // yellow
-
-
-
-
 .EditorPanel {
   height: 90vh;
   box-shadow: 0 14px 34px -3px rgba(black, 0.3);
@@ -427,14 +504,11 @@ export default {
 
 
 .EditorError {
-  // border: 1px solid darken(#e6e6e6, 4);
   background-color: #f71649;
   color: white;
   bottom: 0;
   font-family: $app-code-font-family;
   font-size: 13px;
-  // height: 100%;
-  // overflow: hidden;
   padding-bottom: 8px;
   padding-left: 1rem;
   padding-top: 1rem;
@@ -467,7 +541,6 @@ export default {
   box-shadow: none;
   color: rgba(black, 0.7);
   cursor: pointer;
-  // box-shadow: 0 2px 4px 0 rgba(black, 0.2);
   font-family: $app-button-font-family;
   border-radius: 3px;
   font-size: 12px;
@@ -479,6 +552,5 @@ export default {
   transition-duration: 300ms;
   transition-property: box-shadow;
 }
-
 
 </style>

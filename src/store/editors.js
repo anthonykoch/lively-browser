@@ -1,17 +1,20 @@
 
-const DEFAULT_TUTORIAL_EDITOR_VALUE = `
+import * as EDITORS from '@/constants/editors';
+import * as TUTORIALS from '@/constants/tutorials';
+
+const DEFAULT_MAIN_EDITOR_VALUE = `
 
 var user = {
   username: 'musefan42',
 };
 
-const getUsername = () => {
+const createGreeting = () => {
   return \`Hello, $\{user.username}! I'm delighted to meet you\`;
 };
 
-const username = getUsername();
+const greeting = createGreeting();
 
-username;
+greeting;
 
 `;
 
@@ -42,8 +45,8 @@ export default {
   state: {
     editors: [
       {
-        id: 'main-tutorial',
-        value: DEFAULT_TUTORIAL_EDITOR_VALUE,
+        id: EDITORS.ID_MAIN,
+        value: DEFAULT_MAIN_EDITOR_VALUE,
         coverageTotalLength: 0,
         lastModifiedAt: null,
         lastExecutedAt: null,
@@ -56,7 +59,7 @@ export default {
   },
 
   mutations: {
-    BOOTSTRAP(state) {
+    BOOTSTRAP(state, { isIntroductionTutorialComplete }) {
       // FIXME: This is sort of a hack because I don't know how to make this
       //        not persist in localStorage
       state.editors = state.editors.map(editor => {
@@ -71,6 +74,14 @@ export default {
           isWalkthroughMarkerShowing: false,
         }
       });
+
+      // If the tutorial hasn't been finished, reset the editor value
+      if (!isIntroductionTutorialComplete) {
+        const editor =
+          state.editors.find(editor => editor.id === EDITORS.ID_MAIN);
+
+        editor.value = DEFAULT_MAIN_EDITOR_VALUE;
+      }
     },
 
     REGISTER(state, data) {
@@ -189,7 +200,12 @@ export default {
   },
 
   actions: {
-    bootstrap: ($store) => $store.commit('BOOTSTRAP'),
+    bootstrap: ($store) => {
+      $store.commit('BOOTSTRAP', {
+        isIntroductionTutorialComplete:
+          $store.rootGetters['tutorials/getTutorialById'](TUTORIALS.INTRODUCTION).isComplete,
+      });
+    },
 
     register($store, data) {
       $store.commit('REGISTER', data);

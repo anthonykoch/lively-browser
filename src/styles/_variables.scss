@@ -18,7 +18,7 @@ $app-editor-error-layer: $app-layer-1;
 $app-coverage-marker-layer: $app-layer-1;
 $app-walthrough-popup-layer: $app-layer-9;
 $app-editor-toolbar-layer: $app-layer-10;
-$app-editor-notification-layer: $app-layer-11;
+$app-notification-layer: $app-layer-11;
 $app-overlay-layer: $app-layer-14;
 $app-tooltip-layer: $app-layer-15;
 
@@ -97,13 +97,16 @@ $app-model-content-width: 600px;
 $app-editor-settings-border-radius: 4px;
 $app-editor-settings-background-color: $color-gray;
 
-$app-editor-notification-background-default: $color-gray;
-$app-editor-notification-background-error: $color-error;
-$app-editor-notification-color-default: rgba(black, 0.6);
-$app-editor-notification-color-error: rgba(white, 0.97);
-$app-editor-notification-padding-x: 16px;
-$app-editor-notification-padding-y: 16px;
-$app-editor-notification-border-radius: 4px;
+$app-notification-background-default: $color-gray;
+$app-notification-background-error: $color-error;
+$app-notification-color-default: rgba(black, 0.6);
+$app-notification-color-error: rgba(white, 0.97);
+$app-notification-padding-x: 16px;
+$app-notification-padding-y: 16px;
+$app-notification-padding-small-y: 8px;
+$app-notification-padding-small-x: 10px;
+$app-notification-border-radius: 4px;
+
 
 $app-tooltip-background: $color-gray;
 $app-tooltip-border-color: rgba(black, 0.1);

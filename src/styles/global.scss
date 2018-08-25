@@ -13,6 +13,7 @@
 @import '~animate.css';
 @import 'variables';
 @import 'tooltip';
+@import 'transitions';
 
 *,
 *:after,
@@ -52,6 +53,10 @@ p {
 pre {
   font-family: $app-code-font-family;
   font-size: $app-code-font-size;
+}
+
+code {
+  margin: 0 2px;
 }
 
 

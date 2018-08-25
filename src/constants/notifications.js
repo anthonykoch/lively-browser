@@ -1,0 +1,6 @@
+
+export const WEB_WORKER_BUSY = 'WEB_WORKER_BUSY';
+
+export const INTRODUCTION_1 = 'INTRODUCTION_1';
+export const INTRODUCTION_2 = 'INTRODUCTION_2';
+export const INTRODUCTION_3 = 'INTRODUCTION_3';

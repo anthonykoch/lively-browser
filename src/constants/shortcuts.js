@@ -1,7 +1,7 @@
 
 // type Platform = 'osx' | 'windows' | 'linux';
 
-import { ID_EDITOR_MAIN_TUTORIAL } from '@/constants/editors';
+import { ID_MAIN } from '@/constants/editors';
 
 export const EDITORS_EXECUTE_CODE = 'shortcut/editors/executeCode';
 
@@ -21,7 +21,7 @@ export default [
     on(e, $store) {
       $store.dispatch('editors/markShouldExecute', {
         query: {
-          id: ID_EDITOR_MAIN_TUTORIAL,
+          id: ID_MAIN,
           // state: ['focused'],
         },
       });
@@ -32,9 +32,9 @@ export default [
     keys: ['esc'],
     // when: (state, getters) => getters.anyEditorHasFocus,
     on(e, $store) {
-      $store.dispatch('editors/unmarkWalthroughPopupVisible', {
+      $store.dispatch('editors/unmarkWalkthroughPopupVisible', {
         query: {
-          id: ID_EDITOR_MAIN_TUTORIAL,
+          id: ID_MAIN,
           // state: ['focused'],
         },
       });
@@ -47,7 +47,7 @@ export default [
       $store.dispatch('editors/setWalkthroughIndex', {
         index: 0,
         query: {
-          id: ID_EDITOR_MAIN_TUTORIAL,
+          id: ID_MAIN,
           // state: ['focused'],
         },
       });
@@ -60,7 +60,7 @@ export default [
     on(e, $store) {
       $store.dispatch('editors/showWalkthroughNext', {
         query: {
-          id: ID_EDITOR_MAIN_TUTORIAL,
+          id: ID_MAIN,
           // state: ['focused'],
         },
       });
@@ -73,7 +73,7 @@ export default [
     on(e, $store) {
       $store.dispatch('editors/showWalkthroughPrevious', {
         query: {
-          id: ID_EDITOR_MAIN_TUTORIAL,
+          id: ID_MAIN,
           // state: ['focused'],
         },
       });

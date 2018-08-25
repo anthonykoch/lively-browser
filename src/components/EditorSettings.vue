@@ -39,9 +39,6 @@
                 <p class="Settings-description">
                   Manual mode only executes code with ctrl+enter. Automatic (currently unavailable) will execute code ever n ms after typing.
                 </p>
-               <!--  <span class="HelpTip" v-tooltip.top-center="tooltips.helpSettingsExecutionMode">
-                 <span class="HelpTip-icon ion ion-help"></span>
-               </span> -->
               </div>
               <div class="Settings-group">
                 <label
