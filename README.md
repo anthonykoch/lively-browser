@@ -1,10 +1,9 @@
 
-
 # Lively browser example
 
 ## Try it
 
-anthonykoch.com/vue-scuffka/
+[anthonykoch.com/vue-scuffka](http://www.anthonykoch.com/vue-scuffka)
 
 ## Todo
 
@@ -59,8 +58,6 @@ anthonykoch.com/vue-scuffka/
 
 - [ ] {RL} Pass compilation data with $emit('transform-error')
 - [ ] {RL} Custom keybindings
-
-
 
 
 
