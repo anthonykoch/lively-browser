@@ -33,6 +33,7 @@
     "lodash": "4.17.4",
     "node-sass": "4.7.2",
     "normalize.css": "7.0.0",
+    "popper.js": "^1.14.4",
     "scuffka-javascript": "https://github.com/anthonykoch/scuffka-javascript/tarball/master#1.0.9",
     "source-map": "0.7.2",
     "v-tooltip": "2.0.0-rc.31",
