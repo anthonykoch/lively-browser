@@ -8,6 +8,7 @@ import notifications from './notifications';
 export default {
   strict: true,
   plugins: [createPersistedState({
+    key: 'vuex-1.0.0',
     paths: [
       'editors',
       'settings',
