@@ -24,9 +24,21 @@ export default {
       },
       [NOTIFICATIONS.INTRODUCTION_3]: {
         isShowing: false,
-        message: `<span style="font-weight: 600">Tip:</span> You can also see which expressions resolved first with these buttons. You can go back and forth as much as you please. <div style="margin-top: 15px">You're all set to go!</div>`,
+        message: `<span style="font-weight: 600">Tip:</span> You can also see which expressions resolved first with these buttons. You can go back and forth as much as you please.`,
         size: 'small',
       },
+      [NOTIFICATIONS.INTRODUCTION_4]: {
+        isShowing: false,
+        message: `
+          <span style="font-weight: 600">You're set!</span> You're now free to edit the code to your desire!
+          <div style="margin-top: 15px">
+            <span style="font-weight: 600">Hint:</span>
+            press <code>Esc</code> to clear popups within the editor.
+          </div>
+        `,
+        size: 'small',
+      },
+
     },
   },
 

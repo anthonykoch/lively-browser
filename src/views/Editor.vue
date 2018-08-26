@@ -115,6 +115,18 @@
                   @action="onIntroductionTutorialStep3Accept"
                 >
                 </app-notification>
+                <app-notification
+                  v-show="tutorialNotifications.intro4.isShowing"
+                  :key="2"
+                  :actions="[{ id: 1, text: 'ok' }]"
+                  :message="tutorialNotifications.intro4.message"
+                  :styles="tutorialNotifications.intro4.styles"
+                  :classes="tutorialNotifications.intro4.classes"
+                  size="small"
+                  style="position: relative; left: -15px; top: 22px"
+                  @action="onIntroductionTutorialStep4Accept"
+                >
+                </app-notification>
                 <button
                   slot="reference"
                   :title="titles.walkthroughNext"
@@ -220,6 +232,7 @@ export default {
         intro1: getters['notifications/getById'](NOTIFICATIONS.INTRODUCTION_1),
         intro2: getters['notifications/getById'](NOTIFICATIONS.INTRODUCTION_2),
         intro3: getters['notifications/getById'](NOTIFICATIONS.INTRODUCTION_3),
+        intro4: getters['notifications/getById'](NOTIFICATIONS.INTRODUCTION_4),
       }),
     }),
 
@@ -302,10 +315,24 @@ export default {
     },
 
     onIntroductionTutorialStep3Accept() {
+      this.$store.dispatch('tutorials/finish', {
+        id: TUTORIALS.INTRODUCTION,
+        index: 2,
+      })
+      .then(() => wait(1200))
+      .then(() => {
+        this.$store.dispatch('tutorials/start', {
+          id: TUTORIALS.INTRODUCTION,
+          index: 3,
+        });
+      });
+    },
+
+    onIntroductionTutorialStep4Accept() {
       wait(200).then(() => {
         this.$store.dispatch('tutorials/finish', {
           id: TUTORIALS.INTRODUCTION,
-          index: 2,
+          index: 3,
         });
       });
     },

@@ -98,7 +98,24 @@ export const tutorialSteps = {
             root: true
           });
         },
-      }
+      },
+
+      {
+        async start($store) {
+          await $store.dispatch('notifications/show', {
+            id: NOTIFICATIONS.INTRODUCTION_4,
+          }, {
+            root: true
+          });
+        },
+        async finish($store) {
+          await $store.dispatch('notifications/hide', {
+            id: NOTIFICATIONS.INTRODUCTION_4,
+          }, {
+            root: true
+          });
+        },
+      },
     ],
   },
 };
