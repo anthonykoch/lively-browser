@@ -79,17 +79,13 @@ export const tutorialSteps = {
             root: true
           });
 
-          for (let i = 1; i < 5; i++) {
-            wait(i * 1200).then(() => {
-              return $store.dispatch('editors/showWalkthroughNext', {
-                query: {
-                  id: EDITORS.ID_MAIN,
-                },
-              }, {
-                root: true
-              });
-            });
-          }
+          await $store.dispatch('editors/showWalkthroughNext', {
+            query: {
+              id: EDITORS.ID_MAIN,
+            },
+          }, {
+            root: true
+          });
         },
         async finish($store) {
           await $store.dispatch('notifications/hide', {

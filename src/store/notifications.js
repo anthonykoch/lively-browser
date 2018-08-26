@@ -19,12 +19,16 @@ export default {
       },
       [NOTIFICATIONS.INTRODUCTION_2]: {
         isShowing: false,
-        message: '<span style="font-weight: 600">Tip:</span> Awesome! The code has now been executed. You can now see code coverage as well as the values for standalone variable names (like <code>greeting</code>).',
+        message: `
+          <span style="font-weight: 600">Tip:</span> Awesome! The code has now been executed. You can now see code coverage as well as the values for standalone variable names (like <code>greeting</code>).
+        `,
         size: 'small',
       },
       [NOTIFICATIONS.INTRODUCTION_3]: {
         isShowing: false,
-        message: `<span style="font-weight: 600">Tip:</span> You can also see which expressions resolved first with these buttons. You can go back and forth as much as you please.`,
+        message: `
+          <span style="font-weight: 600">Tip:</span> The arrow buttons allow you to walkthrough which expressions resolved first by highlighting each expression and showing a popup with the value of the expression.
+        `,
         size: 'small',
       },
       [NOTIFICATIONS.INTRODUCTION_4]: {

@@ -1,6 +1,4 @@
 
-// type Platform = 'osx' | 'windows' | 'linux';
-
 import { ID_MAIN } from '@/constants/editors';
 
 export const EDITORS_EXECUTE_CODE = 'shortcut/editors/executeCode';
@@ -17,12 +15,11 @@ export default [
   {
     name: EDITORS_EXECUTE_CODE,
     keys: ['ctrl+enter', 'command+alt+enter'],
-    // when: (state, getters) => getters['editors/anyHasFocus'],
+    // IDEA: when: (state, getters) => getters['editors/anyHasFocus'],
     on(e, $store) {
       $store.dispatch('editors/markShouldExecute', {
         query: {
           id: ID_MAIN,
-          // state: ['focused'],
         },
       });
     },
@@ -30,12 +27,15 @@ export default [
   {
     name: EDITORS_CLEAR_WALKTHROUGH_POPUP,
     keys: ['esc'],
-    // when: (state, getters) => getters.anyEditorHasFocus,
     on(e, $store) {
       $store.dispatch('editors/unmarkWalkthroughPopupVisible', {
         query: {
           id: ID_MAIN,
-          // state: ['focused'],
+        },
+      });
+      $store.dispatch('editors/unmarkWalkthroughMarkerVisible', {
+        query: {
+          id: ID_MAIN,
         },
       });
     },
@@ -48,7 +48,6 @@ export default [
         index: 0,
         query: {
           id: ID_MAIN,
-          // state: ['focused'],
         },
       });
     },
