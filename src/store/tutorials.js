@@ -4,16 +4,9 @@ import * as NOTIFICATIONS from '@/constants/notifications';
 import * as TUTORIALS from '@/constants/tutorials';
 import * as EDITORS from '@/constants/editors';
 
-/**
- * The tutorials are managers of $store.state.notifications
- */
+import { wait } from '@/utils';
 
 const defaultFinishPredicate = (tutorial, getters, payload) => {
-  // console.log('pfinish', {
-  //   same: tutorial.activeIndex === payload.index,
-  //   complete: !tutorial.isComplete
-  // });
-
   return (
     // By default, we'll only run the finish for a tutorial if the user has not
     // yet finished the tutorial and if we're actually on the same tutorial step.
@@ -22,12 +15,6 @@ const defaultFinishPredicate = (tutorial, getters, payload) => {
 };
 
 const defaultStartPredicate = (tutorial, getters, payload) => {
-  // console.log('predicateStart', {
-  //   at0: (payload.index === 0 && tutorial.activeIndex == null),
-  //   next: payload.index === tutorial.activeIndex + 1,
-  //   complete: !tutorial.isComplete
-  // });
-
   return (
     (
       // if it's the first step
@@ -78,8 +65,6 @@ export const tutorialSteps = {
 
       {
         async start($store) {
-          // We need to clear the phantoms because we just told the user to
-          // use the walkthrough
           await $store.dispatch('editors/unmarkWalkthroughPopupVisible', {
             query: {
               id: EDITORS.ID_MAIN,
@@ -93,6 +78,18 @@ export const tutorialSteps = {
           }, {
             root: true
           });
+
+          for (let i = 1; i < 5; i++) {
+            wait(i * 1200).then(() => {
+              return $store.dispatch('editors/showWalkthroughNext', {
+                query: {
+                  id: EDITORS.ID_MAIN,
+                },
+              }, {
+                root: true
+              });
+            });
+          }
         },
         async finish($store) {
           await $store.dispatch('notifications/hide', {
@@ -102,7 +99,6 @@ export const tutorialSteps = {
           });
         },
       }
-
     ],
   },
 };
@@ -130,8 +126,6 @@ export default {
     BOOTSTRAP(state) {
       // Check if the tutorial is done, and if not, restart it.
       Object.values(state.tutorials).forEach((tutorial) => {
-        // console.log(`Tutorial ${tutorial.id} is: ${tutorial.isComplete}`);
-
         if (!tutorial.isComplete) {
           tutorial.activeIndex = null;
         }
@@ -191,12 +185,6 @@ export default {
             // Use the default predicate
             : defaultStartPredicate;
 
-      // console.log('Starting tutorial', {
-      //   goto: index,
-      //   active: tutorial.activeIndex,
-      //   predicate: predicate,
-      // });
-
       if (typeof predicate !== 'function' || !predicate(tutorial, getters, payload)) {
         return null;
       }
@@ -205,7 +193,6 @@ export default {
         goto: index,
         active: tutorial.activeIndex
       });
-
 
       dispatch('fire', {
         id,
@@ -245,8 +232,6 @@ export default {
             ? when
             // Use the default predicate
             : defaultFinishPredicate;
-
-      // console.log({predicate}, !predicate(tutorial, getters, payload));
 
       if (typeof predicate !== 'function' || !predicate(tutorial, getters, payload)) {
         return null;
@@ -293,8 +278,6 @@ export default {
       if (!tutorial.isComplete) {
         await tutorialSteps[index][which]($store);
       }
-
-      // console.log('fire', index, tutorialSteps.length, index === tutorialSteps.length, isTutorialAtEnd);
 
       if (which === 'finish' && isTutorialAtEnd) {
         await $store.dispatch('markTutorialComplete', { id });

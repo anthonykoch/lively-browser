@@ -9,6 +9,7 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/monokai.css';
 
 import 'normalize.css';
+import 'animate.css';
 import '@/styles/_utilities.scss';
 import '@/styles/global.scss';
 

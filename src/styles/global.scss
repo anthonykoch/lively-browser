@@ -261,6 +261,18 @@ $marker-coverage-error: $color-error; // red
 
 
 
+@keyframes a-EditorToolbarLoading {
+  0% {
+    opacity: 0;
+    transform: translate(-40px, -50px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
 .EditorToolbar {
   position: absolute;
   display: flex;
@@ -289,6 +301,13 @@ $marker-coverage-error: $color-error; // red
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
+  }
+
+  &.has-loadingAnimation {
+    animation-name: a-EditorToolbarLoading;
+    animation-duration: 500ms;
+    animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+    animation-fill-mode: both;
   }
 }
 

@@ -47,7 +47,8 @@
               slot="reference"
               :class="{ 'is-busy': isBusy }"
               :title="titles.play"
-              class="EditorToolbar-button is-run"
+              class="EditorToolbar-button is-run has-loadingAnimation"
+              style="animation-delay: 500ms"
               @click="onPlay"
             >
               <span
@@ -58,7 +59,8 @@
           </app-popper>
           <button
             :title="titles.settings"
-            class="EditorToolbar-button is-settings"
+            class="EditorToolbar-button is-settings has-loadingAnimation"
+            style="animation-delay: 800ms"
             @click="showSettingsModal"
           >
             <span class="ion ion-gear-a"></span>
@@ -72,7 +74,10 @@
             <button
               v-show="$store.getters.getValidUserSetting('execution.isWalkthroughEnabled')"
               :title="titles.walkthroughPrevious"
-              class="EditorToolbar-button is-walkthrough is-walkthrough-previous"
+              class="
+                EditorToolbar-button is-walkthrough is-walkthrough-previous has-loadingAnimation
+              "
+              style="animation-delay: 1100ms"
               @click="stepPreviousInWalkthrough()"
             >
               <span class="ion ion-chevron-left"></span>
@@ -113,7 +118,10 @@
                 <button
                   slot="reference"
                   :title="titles.walkthroughNext"
-                  class="EditorToolbar-button is-walkthrough is-walkthrough-next"
+                  class="
+                    EditorToolbar-button is-walkthrough is-walkthrough-next has-loadingAnimation
+                  "
+                  style="animation-delay: 1400ms"
                   @click="stepNextInWalkthrough"
                 >
                   <span class="ion ion-chevron-right"></span>
@@ -193,7 +201,6 @@ export default {
       isBusy: false,
       error: null,
       errorExecId: null,
-      console,
 
       modals: {
         settings: {
@@ -250,7 +257,7 @@ export default {
       this.$store.dispatch('tutorials/begin', {
         id: TUTORIALS.INTRODUCTION,
       });
-    }, 2000);
+    }, 2400);
   },
 
   created() {
@@ -296,8 +303,6 @@ export default {
 
     onIntroductionTutorialStep3Accept() {
       wait(200).then(() => {
-        console.log('meme');
-
         this.$store.dispatch('tutorials/finish', {
           id: TUTORIALS.INTRODUCTION,
           index: 2,

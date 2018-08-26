@@ -25,16 +25,26 @@
             <div class="md">
               <h2>How does it work?</h2>
               <p>
-                The code is <a href="https://en.wikipedia.org/wiki/Instrumentation_(computer_programming)" target="_blank" rel="noreferrer noopener">instrumented</a> through a <a href="https://github.com/anthonykoch/scuffka-javascript" target="_blank" rel="noreferrer noopener">custom written instrumentor</a> that tracks the code execution. When you press play, the code is executed in a Web Worker. Since the code runs in a web worker, there is no access to the DOM. If you do manage to freeze the web worker, a prompt will come up asking if you'd like to
+                The code is <a href="https://en.wikipedia.org/wiki/Instrumentation_(computer_programming)" target="_blank" rel="noreferrer noopener">instrumented</a> with a <a href="https://github.com/anthonykoch/scuffka-javascript" target="_blank" rel="noreferrer noopener">custom written instrumentor</a> that tracks the code execution. When you press play, the code is executed in a Web Worker.
               </p>
               <p>
-                The use of a web worker accomplishes a couple of things. First, it allows easily resetting the environment that the code runs in. Secondly, if the code is long running or an infinite loop incurs, the web worker <em>should</em> detect this and will prompt you to kill the script.
+                Since the code runs in a web worker, there is no access to the DOM. You may still use <code>fetch</code>, however. The use of a web worker accomplishes a couple of things. First, it allows easily resetting the environment that the code runs in. Secondly, a long running or infinite loop should (hopefully) be detected and you will be prompted to kill the script.
               </p>
               <p>
-                The code tracking has been optimized so as to not hinder performance of the code being executed. However, there can still be some pretty drastic performance hits, so don't expect much from that end.
+                The code tracking is optimized in attempts keep the code running as quickly as possible. However, do not that there can still be some pretty drastic performance hits.
               </p>
               <p>
-                The source code can be <a href="https://github.com/anthonykoch/vue-scuffka" rel="noreferrer noopener">found here for the editor code</a>
+                Notes:
+                <br>
+                <br>
+                <ul style="margin-left: 30px">
+                  <li>
+                    <a href="https://github.com/anthonykoch/vue-scuffka" target="_blank" rel="noreferrer noopener">Editor source code</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/anthonykoch/scuffka-javascript" target="_blank" rel="noreferrer noopener">Instrumentor source code</a>
+                  </li>
+                </ul>
               </p>
             </div>
           </div>

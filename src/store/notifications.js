@@ -70,13 +70,6 @@ export default {
     },
 
     getEditorNotifications(state) {
-      console.log(Object.entries(state.notificationsById)
-      .map(([key, item]) => {
-        item.id = key;
-
-        return item;
-      }).filter((item) => item.forEditor));
-
       return Object.entries(state.notificationsById)
         .map(([key, item]) => {
           item.id = key;

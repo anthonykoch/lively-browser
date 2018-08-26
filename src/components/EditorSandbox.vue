@@ -812,8 +812,6 @@ export default {
     },
 
     onSandboxResponse(replies) {
-      // console.log('Received', replies);
-
       replies.forEach((payload) => {
         const execId = payload.execId;
 

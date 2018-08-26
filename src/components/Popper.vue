@@ -113,18 +113,9 @@ export default {
 
       const popperElement = this.$refs.container;
 
-      // console.log({
-      //   popper: popperElement,
-      //   reference: referenceElement,
-      // });
-
       if (referenceElement == null || referenceElement.nodeType !== 1) {
         throw new Error(`Invalid element from $slot "reference", got ${this.referenceElement}`);
       }
-
-      // if (popperElement == null || popperElement.nodeType !== 1) {
-      //   throw new Error(`Invalid popper element, got ${this.popperElement}`);
-      // }
 
       return {
         popperElement,

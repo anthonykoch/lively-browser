@@ -162,8 +162,6 @@ export default {
           ? -1
           : Math.min(editor.coverageTotalLength - 1, editor.activeWalkthroughStepIndex + 1);
 
-      // console.log({step});
-
       if (editor.coverageTotalLength > 0) {
         editor.activeWalkthroughStepIndex = step;
         editor.isWalkthroughPopupShowing = true;
@@ -176,8 +174,6 @@ export default {
         editor.coverageTotalLength === 0
          ? -1
          : Math.max(0, editor.activeWalkthroughStepIndex - 1);
-
-      // console.log({step});
 
       editor.activeWalkthroughStepIndex = step;
     },
