@@ -1,9 +1,10 @@
 <template>
   <div
-    :class="{
+    :class="Object.assign({}, {
       'is-sizeSmall': size === 'small',
       'is-sizeLarge': size === 'large',
-    }"
+    }, classes)"
+    :style="Object.assign({}, styles)"
     class="Notification"
     role="alert"
   >
@@ -38,7 +39,22 @@
 <script>
 
 export default {
+  created() {
+    console.log(this.$props);
+
+  },
+
   props: {
+    styles: {
+      type: Object,
+      default: () => ({}),
+    },
+
+    classes: {
+      type: Object,
+      default: () => ({}),
+    },
+
     actions: {
       type: Array,
       default: () => [],

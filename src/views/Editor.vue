@@ -8,8 +8,6 @@
       @modal-request-close="closeSettingsModal"
     ></app-modal-settings>
 
-    <app-site-header></app-site-header>
-
     <div>
       <div class="EditorPanel">
         <app-notification-list :items="editorNotifications"></app-notification-list>
@@ -26,16 +24,19 @@
             <app-notification
               v-show="tutorialNotifications.intro1.isShowing"
               :key="1"
+              :message="tutorialNotifications.intro1.message"
+              :styles="tutorialNotifications.intro1.styles"
+              :classes="tutorialNotifications.intro1.classes"
               size="small"
               style="position: relative; left: -15px; top: 8px"
-            >
-              {{ tutorialNotifications.intro1.message }}
-            </app-notification>
+            ></app-notification>
             <app-notification
               v-show="tutorialNotifications.intro2.isShowing"
               :key="2"
               :actions="[{ id: 1, text: 'ok' }]"
               :message="tutorialNotifications.intro2.message"
+              :styles="tutorialNotifications.intro2.styles"
+              :classes="tutorialNotifications.intro2.classes"
               size="small"
               style="position: relative; left: -15px; top: 44px"
               @action="onIntroductionTutorialStep2Accept"
@@ -94,14 +95,16 @@
                 :transition="{ name: 'tr-Notification' }"
               >
                 <!--
-                  FIXME: I can not for the life of me figure out why Popper doesn't position correctly.
-                  Hacking it with inline styling
+                  FIXME: I can not for the life of me figure out why Popper doesn't position the notification correctly.
+                  Gotta hack it with inline styling
                  -->
                 <app-notification
                   v-show="tutorialNotifications.intro3.isShowing"
                   :key="1"
                   :actions="[{ id: 1, text: 'ok' }]"
                   :message="tutorialNotifications.intro3.message"
+                  :styles="tutorialNotifications.intro3.styles"
+                  :classes="tutorialNotifications.intro3.classes"
                   size="small"
                   style="position: relative; left: -15px; top: 22px"
                   @action="onIntroductionTutorialStep3Accept"
@@ -178,7 +181,6 @@ export default {
     AppEditorSandbox: require('@/components/EditorSandbox').default,
     AppNotificationList: require('@/components/NotificationList').default,
     AppNotification: require('@/components/Notification').default,
-    AppSiteHeader: require('@/components/SiteHeader').default,
     AppModalSettings: require('@/components/ModalSettings').default,
     AppPopper: require('@/components/Popper').default,
   },
@@ -495,9 +497,9 @@ export default {
   margin-bottom: 4rem;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 2rem;
+  margin-top: 0;
   position: relative;
-  width: 80%;
+  width: 100%;
 }
 
 
@@ -533,24 +535,11 @@ export default {
 
 
 
-
-.Button {
-  background-color: transparent;
-  background-color: rgba(black, 0.1);
-  border: 0;
-  box-shadow: none;
-  color: rgba(black, 0.7);
-  cursor: pointer;
-  font-family: $app-button-font-family;
-  border-radius: 3px;
-  font-size: 12px;
-  outline: 0;
-  padding: 18px 28px;
-  max-width: 100%;
-  min-width: 260px;
-  text-transform: uppercase;
-  transition-duration: 300ms;
-  transition-property: box-shadow;
+@media (min-width: 40em) {
+  .EditorPanel {
+    margin-top: 2rem;
+    width: 80%;
+  }
 }
 
 </style>

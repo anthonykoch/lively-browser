@@ -13,6 +13,8 @@
       <app-notification
         :message="notification.message"
         :size="notification.size"
+        :styles="notification.styles"
+        :classes="notification.classes"
       ></app-notification>
     </li>
   </transition-group>

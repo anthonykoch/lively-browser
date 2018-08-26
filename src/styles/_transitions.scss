@@ -17,3 +17,19 @@
   opacity: 0;
   transform: translate(-70px, 0) scale(1);
 }
+
+
+
+
+.tr-fade-enter-active,
+.tr-fade-leave-active {
+  transition-duration: 600ms;
+  transition-property: opacity;
+  transition-timing-function: ease;
+  transition-delay: 100ms;
+}
+
+.tr-fade-enter,
+.tr-fade-leave-active {
+  opacity: 0
+}

@@ -25,15 +25,13 @@ $app-tooltip-layer: $app-layer-15;
 
 $app-headings: (h1, h2, h3, h4, h5, h6);
 $app-header-height: 40px;
-$app-path-images: '../assets/images/';
 
 $app-backup-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 
 $app-heading-font-family: Oswald, $app-backup-font-family;
 $app-heading-font-family: Montserrat, $app-backup-font-family;
 $app-text-font-family: Montserrat, $app-backup-font-family;
-// $app-text-font-family: 'Helvetica Neue', $app-backup-font-family;
-$app-text-line-height: 1.9;
+$app-text-line-height: 1.8;
 $app-text-font-size: 15px;
 $app-text-font-weight: 400;
 
@@ -53,25 +51,9 @@ $app-post-padding: 6rem;
 
 
 
-@function app-image-url($url) {
-  $path: join($app-path-images, $url);
-
-  @return url($path);
-}
-
-
-
-
-
-
-
 $color-error: hsla(11, 100%, 64%, 1);
 $color-info: hsla(197, 88%, 58%, 1); // a nice blue
 $color-gray: #eae9ea;
-
-// $meme: #e8e7e0;
-
-// #5abef9 // blue replacement?
 
 
 

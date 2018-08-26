@@ -14,7 +14,7 @@ export default {
       },
       [NOTIFICATIONS.INTRODUCTION_1]: {
         isShowing: false,
-        message: 'Hey, press me!',
+        message: `Press play!`,
         size: 'small',
       },
       [NOTIFICATIONS.INTRODUCTION_2]: {
