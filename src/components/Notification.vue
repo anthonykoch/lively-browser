@@ -39,11 +39,6 @@
 <script>
 
 export default {
-  created() {
-    console.log(this.$props);
-
-  },
-
   props: {
     styles: {
       type: Object,
