@@ -38,7 +38,7 @@
               :styles="tutorialNotifications.intro2.styles"
               :classes="tutorialNotifications.intro2.classes"
               size="small"
-              style="position: relative; left: -15px; top: 44px"
+              style="position: relative; left: -15px; top: 47px"
               @action="onIntroductionTutorialStep2Accept"
             >
             </app-notification>
@@ -111,7 +111,7 @@
                   :styles="tutorialNotifications.intro3.styles"
                   :classes="tutorialNotifications.intro3.classes"
                   size="small"
-                  style="position: relative; left: -15px; top: 22px"
+                  style="position: relative; left: -15px; top: 32px"
                   @action="onIntroductionTutorialStep3Accept"
                 >
                 </app-notification>

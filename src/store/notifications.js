@@ -20,21 +20,21 @@ export default {
       [NOTIFICATIONS.INTRODUCTION_2]: {
         isShowing: false,
         message: `
-          <span style="font-weight: 600">Tip:</span> Awesome! The code has now been executed. You can now see code coverage as well as the values for standalone variable names (like <code>greeting</code>).
+          <span style="font-weight: 600">Tip:</span> Awesome! The code has now been executed. You should now see code coverage in the gutter and values of expressions to the right of standalone variable names (e.g. <code>greeting</code>).
         `,
         size: 'small',
       },
       [NOTIFICATIONS.INTRODUCTION_3]: {
         isShowing: false,
         message: `
-          <span style="font-weight: 600">Tip:</span> The arrow buttons allow you to walkthrough which expressions resolved first by highlighting each expression and showing a popup with the value of the expression.
+          <span style="font-weight: 600">Tip:</span> Pressing the arrow buttons will allow you to walk through the order each expression resolved in. With each press, an expression will be highlighted and a popup will show with the value of the expression.
         `,
         size: 'small',
       },
       [NOTIFICATIONS.INTRODUCTION_4]: {
         isShowing: false,
         message: `
-          <span style="font-weight: 600">You're set!</span> You're now free to edit the code to your desire!
+          <span style="font-weight: 600">You're set!</span> Feel free to edit the code to your desire!
           <div style="margin-top: 15px">
             <span style="font-weight: 600">Hint:</span>
             press <code>Esc</code> to clear popups within the editor.
