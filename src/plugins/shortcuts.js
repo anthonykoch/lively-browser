@@ -173,7 +173,5 @@ export default {
 
       return activeShortcuts.slice(0);
     };
-
-    Vue.prototype.getActiveMemes = () => activeShortcuts;
   },
 };

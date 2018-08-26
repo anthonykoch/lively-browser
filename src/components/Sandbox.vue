@@ -101,7 +101,6 @@ export default {
               event = 'runtime-error';
             }
 
-            // console.log('done')
             this.$emit(event, firstMessage.payload);
           } else {
             // if (message.part > 8000) {

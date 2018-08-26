@@ -5,8 +5,6 @@ const defaultSettings = {
   'execution.mode': 'manual',
 };
 
-const toArray = (arg) => Array.isArray(arg) ? arg: [arg];
-
 const validators = {
   'execution.isWalkthroughEnabled': (value) => typeof value === 'boolean',
   'execution.mode': (value) => ['manual', 'automatic'].includes(value),
@@ -55,7 +53,7 @@ export default {
       return validators[path](value) ? value : state.default[path];
     },
 
-    getUserSetting: (state) => {
+    getUserSetting: (state) => (path) => {
       assertPath(path);
 
       return state.user[path];

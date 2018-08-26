@@ -1,2 +1,2 @@
 
-export const ID_EDITOR_MAIN_TUTORIAL = 'main-tutorial';
+export const ID_MAIN = 'main';

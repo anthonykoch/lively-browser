@@ -1,73 +1,135 @@
 <template>
   <div>
-    <app-site-header></app-site-header>
-
     <div class="Hero">
-      <figure>
-        <figcaption class="Hero-description">
-          Scuffka allows you to execute Javascript and see what each expression resolves to and which expressions resolve first.
-        </figcaption>
 
-        <div class="Hero-action">
-          <router-link :to="{ name: 'editor' }" class="Button">Try it</router-link>
+      <div class="Hero-container">
+        <div style="text-align: center">
+          <h2 class="Title">An interactive view into JavaScript execution</h2>
         </div>
 
-        <div
-          class="IntroVideo"
-        >
-          <video
-            class="IntroVideo-video"
-            src="~assets/videos/howitworks2.mp4"
-            controls
-            width="720"
-            @click="togglePlayState"
-          ></video>
-        </div>
-      </figure>
+        <figure>
+          <div
+            class="IntroVideo"
+          >
+            <video
+              class="IntroVideo-video"
+              src="~assets/videos/howitworks2.mp4"
+              controls
+              width="720"
+            ></video>
+          </div>
+        </figure>
 
-      <img
-        src="~assets/images/icon.logo.vue.svg"
-        alt=""
-        width="260px"
-        class="vuelogo"
-      >
+        <div class="About u-gutter">
+          <div class="About-grid">
+            <div class="md">
+              <h2>How does it work?</h2>
+              <p>
+                The code is <a href="https://en.wikipedia.org/wiki/Instrumentation_(computer_programming)" target="_blank" rel="noreferrer noopener">instrumented</a> with a <a href="https://github.com/anthonykoch/scuffka-javascript" target="_blank" rel="noreferrer noopener">custom written instrumentor</a> that tracks the code execution. When you press play, the code is executed in a Web Worker.
+              </p>
+              <p>
+                Since the code runs in a web worker, there is no access to the DOM. You may still use <code>fetch</code>, however. The use of a web worker accomplishes a couple of things. First, it allows easily resetting the environment that the code runs in. Secondly, a long running or infinite loop should (hopefully) be detected and you will be prompted to kill the script.
+              </p>
+              <p>
+                The code tracking is optimized in attempts keep the code running as quickly as possible. However, do not that there can still be some pretty drastic performance hits.
+              </p>
+              <p>
+                Notes:
+                <br>
+                <br>
+                <ul style="margin-left: 30px">
+                  <li>
+                    <a href="https://github.com/anthonykoch/vue-scuffka" target="_blank" rel="noreferrer noopener">Editor source code</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/anthonykoch/scuffka-javascript" target="_blank" rel="noreferrer noopener">Instrumentor source code</a>
+                  </li>
+                </ul>
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+
 export default {
-  components: {
-    AppSiteHeader: require('@/components/SiteHeader').default,
-  },
-
-  data() {
-    return {
-      //
-    };
-  },
-
-  methods: {
-    togglePlayState() {
-
-    },
-  },
+  //
 };
 
 </script>
 
 <style scoped lang="scss">
 
-.vuelogo {
-  display: none;
-  margin: 2rem auto;
-  width: 260px;
+.Title {
+  font-weight: 700;
+  font-size: 38px;
+  letter-spacing: 1px;
+  line-height: 1.4;
+  margin: auto;
+  margin-bottom: 25px;
+  max-width: 1000px;
+  text-transform: uppercase;
 
 }
+
+
+
+
+.About {
+  margin: 0 auto 100px;
+  max-width: 600px;
+}
+
+
+
+.md {
+  & > h2 {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+
+  & > p {
+    font-size: 14px;
+    margin-bottom: 2rem;
+  }
+}
+
+
+
 
 .Hero {
   margin-top: 3rem;
+  width: 100%;
 }
+
+.Hero-container {
+  max-width: 1400px;
+  margin-left: auto;
+}
+
+// .Hero-grid {
+//   display: flex;
+//   // margin-left: -20px;
+//   // margin-right: -20px;
+// }
+
+// .Hero-column {
+//   // padding-left: 20px;
+//   // padding-right: 20px;
+
+//   &:nth-child(1) {
+//     width: 40%;
+//   }
+
+//   &:nth-child(2) {
+//     flex: 1;
+//   }
+// }
 
 .Hero-title {
   letter-spacing: 1px;
@@ -97,12 +159,21 @@ export default {
   text-align: center;
 }
 
+.Hero-action {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+
+
+
 .IntroVideo {
   display: block;
+  margin-bottom: 60px;
   margin-left: auto;
   margin-right: auto;
-  max-width: 720px;
-  margin-bottom: 1rem;
+  margin-top: 0px;
+  max-width: 640px;
 }
 
 .IntroVideo-video {
@@ -112,33 +183,20 @@ export default {
   max-width: 100%;
 }
 
-.Hero-action {
-  text-align: center;
-  margin-bottom: 2rem;
+
+
+
+@media only screen and (min-width: 40em) {
+  .Title {
+    font-size: 45px;
+    line-height: 1.2;
+    margin-bottom: 30px;
+  }
+
+  .IntroVideo {
+    border-top: 1px solid #999;
+    padding-top: 40px;
+  }
 }
-
-
-
-
-.Button {
-  background-color: transparent;
-  background-color: rgba(black, 0.1);
-  border: 0;
-  box-shadow: none;
-  color: rgba(black, 0.7);
-  cursor: pointer;
-  // box-shadow: 0 2px 4px 0 rgba(black, 0.2);
-  font-family: $app-button-font-family;
-  border-radius: 3px;
-  font-size: 12px;
-  outline: 0;
-  padding: 18px 28px;
-  max-width: 100%;
-  min-width: 260px;
-  text-transform: uppercase;
-  transition-duration: 300ms;
-  transition-property: box-shadow;
-}
-
 
 </style>
